@@ -9,9 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Data Files">
-      <UniqueIdentifier>{bb08c85f-1cf5-4a2e-8058-812562f38880}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -31,28 +28,5 @@
     <ClInclude Include="Base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Data\dc_to_dc_rtt">
-      <Filter>Data Files</Filter>
-    </None>
-    <None Include="Data\ec2_azure_datacenter_list">
-      <Filter>Data Files</Filter>
-    </None>
-    <None Include="Data\ec2_azure_price_bandwidth">
-      <Filter>Data Files</Filter>
-    </None>
-    <None Include="Data\ec2_azure_price_server">
-      <Filter>Data Files</Filter>
-    </None>
-    <None Include="Data\ec2_azure_price_server_small">
-      <Filter>Data Files</Filter>
-    </None>
-    <None Include="Data\pl_list">
-      <Filter>Data Files</Filter>
-    </None>
-    <None Include="Data\pl_to_ec2_azure_rtt_cleaned">
-      <Filter>Data Files</Filter>
-    </None>
   </ItemGroup>
 </Project>
