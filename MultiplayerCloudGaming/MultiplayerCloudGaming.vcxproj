@@ -166,15 +166,6 @@
     <ClInclude Include="Base.h" />
     <ClInclude Include="ServerAllocationProblem.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Data\dc_to_dc_rtt" />
-    <None Include="Data\ec2_azure_datacenter_list" />
-    <None Include="Data\ec2_azure_price_bandwidth" />
-    <None Include="Data\ec2_azure_price_server" />
-    <None Include="Data\ec2_azure_price_server_small" />
-    <None Include="Data\pl_list" />
-    <None Include="Data\pl_to_ec2_azure_rtt_cleaned" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
