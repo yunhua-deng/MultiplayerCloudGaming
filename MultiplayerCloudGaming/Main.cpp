@@ -17,10 +17,8 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	SimulateBasicProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, 100);
-	SimulateGeneralProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, 100);
-	//SimulateBasicProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE);
-	//SimulateGeneralProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE);
+	ServerAllocationProblem::SimulateBasicProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, 100);
+	ServerAllocationProblem::SimulateGeneralProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, 100);
 
 	return 0;
 }
