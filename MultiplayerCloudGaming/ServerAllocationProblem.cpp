@@ -2,77 +2,66 @@
 
 namespace ServerAllocationProblem
 {
-	bool DCComparatorByPriceServer(DatacenterType* A, DatacenterType* B)
-	{
-		return (A->priceServer < B->priceServer);
-	}
-
-	bool DCComparatorByPriceBandwidth(DatacenterType* A, DatacenterType* B)
-	{
-		return (A->priceBandwidth < B->priceBandwidth);
-	}
-
-	bool DCComparatorByPriceCombined(DatacenterType* A, DatacenterType* B)
-	{
-		return (A->priceCombined < B->priceCombined);
-	}
-
-	bool DCComparatorByAverageCostPerClient(DatacenterType* A, DatacenterType* B)
-	{
-		return (A->averageCostPerClient < B->averageCostPerClient);
-	}
-
-	bool EligibleDCComparatorByDelay(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
-	{
-		if (get<1>(A) < get<1>(B))
-			return true;
-		else if (get<1>(A) == get<1>(B)) // if latencies tie
-			return (get<2>(A) < get<2>(B)); // choose the one with lower server price
-
-		return false;
-	}
-
-	bool EligibleDCComparatorByPriceServer(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
-	{
-		if (get<2>(A) < get<2>(B))
-			return true;
-		else if (get<2>(A) == get<2>(B)) // if server prices tie
-			return (get<1>(A) < get<1>(B)); // choose the one with lower latency
-
-		return false;
-	}
-
-	bool EligibleDCComparatorByPriceBandwidth(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
-	{
-		if (get<3>(A) < get<3>(B))
-			return true;
-		else if (get<3>(A) == get<3>(B)) // if bandwidth prices tie
-			return (get<1>(A) < get<1>(B)); // choose the one with lower latency
-
-		return false;
-	}
-
-	bool EligibleDCComparatorByPriceCombined(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
-	{
-		if (get<4>(A) < get<4>(B))
-			return true;
-		else if (get<4>(A) == get<4>(B)) // if combined prices tie
-			return (get<1>(A) < get<1>(B)); // choose the one with lower latency
-
-		return false;
-	}
+	//bool DCComparatorByPriceServer(DatacenterType* A, DatacenterType* B)
+	//{
+	//	return (A->priceServer < B->priceServer);
+	//}
+	//bool DCComparatorByPriceBandwidth(DatacenterType* A, DatacenterType* B)
+	//{
+	//	return (A->priceBandwidth < B->priceBandwidth);
+	//}
+	//bool DCComparatorByPriceCombined(DatacenterType* A, DatacenterType* B)
+	//{
+	//	return (A->priceCombined < B->priceCombined);
+	//}
+	//bool DCComparatorByAverageCostPerClient(DatacenterType* A, DatacenterType* B)
+	//{
+	//	return (A->averageCostPerClient < B->averageCostPerClient);
+	//}
+	//bool EligibleDCComparatorByDelay(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
+	//{
+	//	if (get<1>(A) < get<1>(B))
+	//		return true;
+	//	else if (get<1>(A) == get<1>(B)) // if latencies tie
+	//		return (get<2>(A) < get<2>(B)); // choose the one with lower server price
+	//	return false;
+	//}
+	//bool EligibleDCComparatorByPriceServer(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
+	//{
+	//	if (get<2>(A) < get<2>(B))
+	//		return true;
+	//	else if (get<2>(A) == get<2>(B)) // if server prices tie
+	//		return (get<1>(A) < get<1>(B)); // choose the one with lower latency
+	//	return false;
+	//}
+	//bool EligibleDCComparatorByPriceBandwidth(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
+	//{
+	//	if (get<3>(A) < get<3>(B))
+	//		return true;
+	//	else if (get<3>(A) == get<3>(B)) // if bandwidth prices tie
+	//		return (get<1>(A) < get<1>(B)); // choose the one with lower latency
+	//	return false;
+	//}
+	//bool EligibleDCComparatorByPriceCombined(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
+	//{
+	//	if (get<4>(A) < get<4>(B))
+	//		return true;
+	//	else if (get<4>(A) == get<4>(B)) // if combined prices tie
+	//		return (get<1>(A) < get<1>(B)); // choose the one with lower latency
+	//	return false;
+	//}
 
 	void ResetEligibiltyCoverability(const vector<ClientType*> &clients, const vector<DatacenterType*> &datacenters)
 	{
 		for (auto c : clients)
 		{
-			c->eligibleDatacenterList.clear();
+			//c->eligibleDatacenterList.clear();
 			c->eligibleDatacenters.clear();
 		}
 
 		for (auto d : datacenters)
 		{
-			d->coverableClientList.clear();
+			//d->coverableClientList.clear();
 			d->coverableClients.clear();
 		}
 	}
@@ -86,7 +75,7 @@ namespace ServerAllocationProblem
 
 		for (auto d : datacenters)
 		{
-			d->assignedClientList.clear();
+			//d->assignedClientList.clear();
 			d->assignedClients.clear();
 		}
 	}
@@ -124,10 +113,10 @@ namespace ServerAllocationProblem
 					if ((client->delayToDatacenter[dc->id] + dc->delayToDatacenter[Gdc->id]) <= DELAY_BOUND_TO_G
 						&& client->delayToDatacenter[dc->id] <= DELAY_BOUND_TO_R)
 					{
-						client->eligibleDatacenterList.push_back(tuple<int, double, double, double, double>(dc->id, client->delayToDatacenter[dc->id], dc->priceServer, dc->priceBandwidth * client->chargedTrafficVolume, dc->priceCombined));
+						//client->eligibleDatacenterList.push_back(tuple<int, double, double, double, double>(dc->id, client->delayToDatacenter[dc->id], dc->priceServer, dc->priceBandwidth * client->chargedTrafficVolume, dc->priceCombined));
 						client->eligibleDatacenters.push_back(dc);
 
-						dc->coverableClientList.push_back(client->id);
+						//dc->coverableClientList.push_back(client->id);
 						dc->coverableClients.push_back(client);
 					}
 				}
@@ -219,10 +208,10 @@ namespace ServerAllocationProblem
 			{
 				if ((client->delayToDatacenter[dc->id] + dc->delayToDatacenter[GDatacenter->id]) <= DELAY_BOUND_TO_G && client->delayToDatacenter[dc->id] <= DELAY_BOUND_TO_R)
 				{
-					client->eligibleDatacenterList.push_back(tuple<int, double, double, double, double>(dc->id, client->delayToDatacenter[dc->id], dc->priceServer, dc->priceBandwidth, dc->priceCombined)); // record eligible dc's id, delay, priceServer, priceBandwidth, priceCombined
+					//client->eligibleDatacenterList.push_back(tuple<int, double, double, double, double>(dc->id, client->delayToDatacenter[dc->id], dc->priceServer, dc->priceBandwidth, dc->priceCombined)); // record eligible dc's id, delay, priceServer, priceBandwidth, priceCombined
 					client->eligibleDatacenters.push_back(dc);
 
-					dc->coverableClientList.push_back(client->id);
+					//dc->coverableClientList.push_back(client->id);
 					dc->coverableClients.push_back(client);
 				}
 			}
@@ -232,7 +221,7 @@ namespace ServerAllocationProblem
 	// include G-server's cost into the total cost according to the group size
 	// used inside the following strategy functions
 	// for general problem only
-	void IncludeGServerCost(DatacenterType *GDatacenter, double SESSION_SIZE, bool includingGServerCost, double &tempTotalCost)
+	/*void IncludeGServerCost(DatacenterType *GDatacenter, double SESSION_SIZE, bool includingGServerCost, double &tempTotalCost)
 	{
 		if (includingGServerCost)
 		{
@@ -245,7 +234,7 @@ namespace ServerAllocationProblem
 			else
 				tempTotalCost += GDatacenter->priceServer;
 		}
-	}
+	}*/
 
 	// function to get the solution output 
 	// return <cost_total, cost_server, cost_bandwidth, capacity_wastage, average_delay>
@@ -255,17 +244,22 @@ namespace ServerAllocationProblem
 		vector<ClientType*> sessionClients,
 		int GDatacenterID)
 	{
-		double costServer = 0, costBandwidth = 0, numberServers = 0, totalDelay = 0;
-
+		double costServer = 0, costBandwidth = 0, numberServers = 0;
 		for (auto dc : allDatacenters)
 		{
-			dc->openServerCount = ceil(dc->assignedClientList.size() / serverCapacity);
-
+			//dc->openServerCount = ceil(dc->assignedClientList.size() / serverCapacity);
+			dc->openServerCount = ceil(double(dc->assignedClients.size()) / serverCapacity);
 			numberServers += dc->openServerCount;
-			costServer += dc->openServerCount * dc->priceServer;		
-			for (auto it : dc->assignedClients) costBandwidth += it->chargedTrafficVolume * dc->priceBandwidth;
+			costServer += dc->priceServer * dc->openServerCount;
+			double totalChargedTrafficVolume = 0;
+			for (auto client : dc->assignedClients)
+			{
+				totalChargedTrafficVolume += client->chargedTrafficVolume;
+			}
+			costBandwidth += dc->priceBandwidth * totalChargedTrafficVolume;
 		}
 
+		double totalDelay = 0;
 		for (auto client : sessionClients)
 		{
 			totalDelay += client->delayToDatacenter[client->assignedDatacenterID] + allDatacenters.at(client->assignedDatacenterID)->delayToDatacenter[GDatacenterID];
@@ -284,19 +278,26 @@ namespace ServerAllocationProblem
 	{
 		for (auto c : sessionClients)
 		{
-			if (c->assignedDatacenterID < 0)
+			bool validAssignment = false;
+			for (auto edc : c->eligibleDatacenters)
+			{
+				if (c->assignedDatacenterID == edc->id)
+				{
+					validAssignment = true;
+					break;
+				}
+			}
+			if (!validAssignment)
 				return false;
 		}
 
 		int totalAssignedClientCount = 0;
 		for (auto d : allDatacenters)
 		{
-			totalAssignedClientCount += (int)d->assignedClientList.size();
+			//totalAssignedClientCount += (int)d->assignedClientList.size();
+			totalAssignedClientCount += (int)d->assignedClients.size();
 		}
-		if (totalAssignedClientCount != (int)sessionClients.size())
-			return false;
-
-		return true;
+		return (totalAssignedClientCount == (int)sessionClients.size());
 	}
 
 	bool Initialize(string dataDirectory, vector<ClientType*> &allClients, vector<DatacenterType*> &allDatacenters)
@@ -509,7 +510,6 @@ namespace ServerAllocationProblem
 		vector<double> matchmakingTimeAtAllSessions;
 
 		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8 };
-
 		int STRATEGY_COUNT = 8;
 
 		for (int sessionID = 1; sessionID <= SESSION_COUNT; sessionID++)
@@ -520,21 +520,19 @@ namespace ServerAllocationProblem
 			auto matchmakingStartTime = clock();
 			bool isFeasibleSession = Matchmaking4BasicProblem(allDatacenters, allClients, GDatacenterID, sessionClients, SESSION_SIZE, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 			matchmakingTimeAtAllSessions.push_back(difftime(clock(), matchmakingStartTime));
-
-			GDatacenterIDAtAllSessions.push_back(GDatacenterID);
-
 			if (!isFeasibleSession)
 			{
-				printf("*********************************************************************\n");
+				printf("--------------------------------------------------------------------\n");
 				printf("ERROR: infeasible session\n");
 				printf("total elapsed time: %d seconds\n", (int)(difftime(clock(), t0) / 1000));
 				cin.get();
 				return;
 			}
-
+			GDatacenterIDAtAllSessions.push_back(GDatacenterID);
 			for (auto client : sessionClients)
 			{
-				eligibleRDatacenterCount.push_back((int)client->eligibleDatacenterList.size());
+				//eligibleRDatacenterCount.push_back((int)client->eligibleDatacenterList.size());
+				eligibleRDatacenterCount.push_back((int)client->eligibleDatacenters.size());
 			}
 
 			printf("------------------------------------------------------------------------\n");
@@ -546,10 +544,10 @@ namespace ServerAllocationProblem
 
 			for (auto serverCapacity : SERVER_CAPACITY_LIST)
 			{
-				for (auto dc : allDatacenters)
-				{
-					dc->priceCombined = (dc->priceServer / serverCapacity) + dc->priceBandwidth; // dependent on server capacity
-				}
+				//for (auto dc : allDatacenters)
+				//{
+				//	dc->priceCombined = (dc->priceServer / serverCapacity) + dc->priceBandwidth; // dependent on server capacity
+				//}
 
 				vector<tuple<double, double, double, double, double>> outcomeAtOneCapacity; // per capacity
 				vector<double> computationAtOneCapacity; // per capacity
@@ -755,10 +753,10 @@ namespace ServerAllocationProblem
 
 			for (auto serverCapacity : SERVER_CAPACITY_LIST)
 			{
-				for (auto dc : allDatacenters)
-				{
-					dc->priceCombined = (dc->priceServer / serverCapacity) + dc->priceBandwidth; // dependent on server capacity
-				}
+				//for (auto dc : allDatacenters)
+				//{
+				//	dc->priceCombined = (dc->priceServer / serverCapacity) + dc->priceBandwidth; // dependent on server capacity
+				//}
 
 				vector<tuple<double, double, double, double, double>> outcomeAtOneCapacity; // per capacity		
 				vector<double> computationAtOneCapacity; // per capacity
@@ -954,24 +952,45 @@ namespace ServerAllocationProblem
 
 		for (auto client : sessionClients)
 		{
-			client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(),
-				EligibleDCComparatorByPriceCombined));
+			//client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceCombined));
+			client->assignedDatacenterID = client->eligibleDatacenters.front()->id;
+			for (auto edc : client->eligibleDatacenters)
+			{
+				double priceCombinedPrevious = allDatacenters.at(client->assignedDatacenterID)->priceServer / serverCapacity + allDatacenters.at(client->assignedDatacenterID)->priceBandwidth * client->chargedTrafficVolume;
+				double priceCombinedCurrent = edc->priceServer / serverCapacity + edc->priceBandwidth * client->chargedTrafficVolume;
+				if (priceCombinedCurrent < priceCombinedPrevious)
+				{
+					client->assignedDatacenterID = edc->id;
+				}
+				else if (priceCombinedCurrent == priceCombinedPrevious)
+				{
+					if (client->delayToDatacenter.at(edc->id) < client->delayToDatacenter.at(client->assignedDatacenterID))
+					{
+						client->assignedDatacenterID = edc->id;
+					}
+				}
+			}
 
-			allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id);
+			//allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id);
 			allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 		}
 
-		double costServer = 0, costBandwidth = 0, numberServers = 0, totalDelay = 0;
-
+		double costServer = 0, costBandwidth = 0, numberServers = 0;
 		for (auto dc : allDatacenters)
 		{
-			dc->openServerCount = dc->assignedClientList.size() / serverCapacity;
+			//dc->openServerCount = dc->assignedClientList.size() / serverCapacity;
+			dc->openServerCount = double(dc->assignedClients.size()) / serverCapacity;
 			numberServers += dc->openServerCount;
-
-			costServer += dc->openServerCount * dc->priceServer;
-			for (auto it : dc->assignedClients) costBandwidth += it->chargedTrafficVolume * dc->priceBandwidth;
+			costServer += dc->priceServer * dc->openServerCount;
+			double totalChargedTrafficVolume = 0;
+			for (auto client : dc->assignedClients)
+			{
+				totalChargedTrafficVolume += client->chargedTrafficVolume;
+			}
+			costBandwidth += dc->priceBandwidth * totalChargedTrafficVolume;
 		}
 
+		double totalDelay = 0;
 		for (auto client : sessionClients)
 		{
 			totalDelay += client->delayToDatacenter[client->assignedDatacenterID] + allDatacenters.at(client->assignedDatacenterID)->delayToDatacenter[GDatacenterID];
@@ -981,7 +1000,7 @@ namespace ServerAllocationProblem
 			costServer + costBandwidth,
 			costServer,
 			costBandwidth,
-			numberServers * serverCapacity - sessionClients.size(),
+			0,
 			totalDelay / sessionClients.size());
 	}
 
@@ -1006,7 +1025,7 @@ namespace ServerAllocationProblem
 			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R); // initilization		
 			auto tempOutcome = Alg_LB(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 			double tempTotalCost = get<0>(tempOutcome);
-			IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
+			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
 			if (tempTotalCost < totalCost) // choose the smaller cost
 			{
 				totalCost = tempTotalCost;
@@ -1031,14 +1050,16 @@ namespace ServerAllocationProblem
 
 		for (auto client : sessionClients) // choose a dc for each client
 		{
-			client->assignedDatacenterID = get<0>(client->eligibleDatacenterList.at(rand() % (int)client->eligibleDatacenterList.size()));
+			//client->assignedDatacenterID = get<0>(client->eligibleDatacenterList.at(rand() % (int)client->eligibleDatacenterList.size()));
+			vector<DatacenterType*> copyEligibleDatacenters(client->eligibleDatacenters);
+			std::random_shuffle(copyEligibleDatacenters.begin(), copyEligibleDatacenters.end());
+			client->assignedDatacenterID = copyEligibleDatacenters.front()->id;
 		
-			allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+			//allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
 			allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 		}
 
-		auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
-		return tuple<double, double, double, double, double>(get<0>(solutionOutput), get<1>(solutionOutput), get<2>(solutionOutput), get<3>(solutionOutput), get<4>(solutionOutput));
+		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
 	}
 
 	// Random-Assignment
@@ -1062,7 +1083,7 @@ namespace ServerAllocationProblem
 			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R); // initilization		
 			auto tempOutcome = Alg_RANDOM(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 			double tempTotalCost = get<0>(tempOutcome);
-			IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
+			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
 			if (tempTotalCost < totalCost) // choose the smaller cost
 			{
 				totalCost = tempTotalCost;
@@ -1087,14 +1108,21 @@ namespace ServerAllocationProblem
 
 		for (auto client : sessionClients)
 		{
-			client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByDelay)); // choose the nearest eligible dc for each client		
+			//client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByDelay)); // choose the nearest eligible dc for each client		
+			client->assignedDatacenterID = client->eligibleDatacenters.front()->id;
+			for (auto edc : client->eligibleDatacenters)
+			{
+				if (client->delayToDatacenter[edc->id] < client->delayToDatacenter[client->assignedDatacenterID])
+				{
+					client->assignedDatacenterID = edc->id;
+				}
+			}
 
-			allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+			//allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
 			allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 		}
 
-		auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
-		return tuple<double, double, double, double, double>(get<0>(solutionOutput), get<1>(solutionOutput), get<2>(solutionOutput), get<3>(solutionOutput), get<4>(solutionOutput));
+		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
 	}
 
 	// Nearest-Assignment
@@ -1118,7 +1146,7 @@ namespace ServerAllocationProblem
 			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R); // initilization				
 			auto tempOutcome = Alg_NEAREST(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 			double tempTotalCost = get<0>(tempOutcome);
-			IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
+			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
 			if (tempTotalCost < totalCost) // choose the smaller cost
 			{
 				totalCost = tempTotalCost;
@@ -1143,14 +1171,28 @@ namespace ServerAllocationProblem
 
 		for (auto client : sessionClients)
 		{
-			client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceServer));
+			//client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceServer));
+			client->assignedDatacenterID = client->eligibleDatacenters.front()->id;
+			for (auto edc : client->eligibleDatacenters)
+			{
+				if (edc->priceServer < allDatacenters.at(client->assignedDatacenterID)->priceServer)
+				{
+					client->assignedDatacenterID = edc->id;
+				}
+				else if (edc->priceServer == allDatacenters.at(client->assignedDatacenterID)->priceServer)
+				{
+					if (client->delayToDatacenter.at(edc->id) < client->delayToDatacenter.at(client->assignedDatacenterID))
+					{
+						client->assignedDatacenterID = edc->id;
+					}
+				}
+			}
 
-			allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+			//allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
 			allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 		}
 
-		auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
-		return tuple<double, double, double, double, double>(get<0>(solutionOutput), get<1>(solutionOutput), get<2>(solutionOutput), get<3>(solutionOutput), get<4>(solutionOutput));
+		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
 	}
 
 	// Lowest-Bandwidth-Price-Datacenter-Assignment (LBP)
@@ -1166,14 +1208,28 @@ namespace ServerAllocationProblem
 		auto clock_begin = clock();
 		for (auto client : sessionClients)
 		{
-			client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceBandwidth));
+			//client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceBandwidth));
+			client->assignedDatacenterID = client->eligibleDatacenters.front()->id;
+			for (auto edc : client->eligibleDatacenters)
+			{
+				if (edc->priceBandwidth < allDatacenters.at(client->assignedDatacenterID)->priceBandwidth)
+				{
+					client->assignedDatacenterID = edc->id;
+				}
+				else if (edc->priceBandwidth == allDatacenters.at(client->assignedDatacenterID)->priceBandwidth)
+				{
+					if (client->delayToDatacenter.at(edc->id) < client->delayToDatacenter.at(client->assignedDatacenterID))
+					{
+						client->assignedDatacenterID = edc->id;
+					}
+				}
+			}
 
-			allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+			//allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
 			allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 		}
 
-		auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
-		return tuple<double, double, double, double, double>(get<0>(solutionOutput), get<1>(solutionOutput), get<2>(solutionOutput), get<3>(solutionOutput), get<4>(solutionOutput));
+		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
 	}
 
 	// Lowest-Combined-Price-Datacenter-Assignment (LCP)
@@ -1188,14 +1244,30 @@ namespace ServerAllocationProblem
 
 		for (auto client : sessionClients)
 		{
-			client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceCombined));
+			//client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceCombined));
+			client->assignedDatacenterID = client->eligibleDatacenters.front()->id;
+			for (auto edc : client->eligibleDatacenters)
+			{
+				double priceCombinedPrevious = allDatacenters.at(client->assignedDatacenterID)->priceServer / serverCapacity + allDatacenters.at(client->assignedDatacenterID)->priceBandwidth * client->chargedTrafficVolume;
+				double priceCombinedCurrent = edc->priceServer / serverCapacity + edc->priceBandwidth * client->chargedTrafficVolume;
+				if (priceCombinedCurrent < priceCombinedPrevious)
+				{
+					client->assignedDatacenterID = edc->id;
+				}
+				else if (priceCombinedCurrent == priceCombinedPrevious)
+				{
+					if (client->delayToDatacenter.at(edc->id) < client->delayToDatacenter.at(client->assignedDatacenterID))
+					{
+						client->assignedDatacenterID = edc->id;
+					}
+				}
+			}
 
-			allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+			//allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
 			allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 		}
 
-		auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
-		return tuple<double, double, double, double, double>(get<0>(solutionOutput), get<1>(solutionOutput), get<2>(solutionOutput), get<3>(solutionOutput), get<4>(solutionOutput));
+		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
 	}
 
 	// Lowest-Server-Price-Datacenter-Assignment (LSP)
@@ -1229,7 +1301,7 @@ namespace ServerAllocationProblem
 				tempServerCountPerDC[dc->id] = dc->openServerCount;
 			}
 
-			IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
+			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
 
 			if (tempTotalCost < totalCost) // choose the smaller cost
 			{
@@ -1275,7 +1347,7 @@ namespace ServerAllocationProblem
 			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 			auto tempOutcome = Alg_LBP(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 			double tempTotalCost = get<0>(tempOutcome);
-			IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
+			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
 			if (tempTotalCost < totalCost) // choose the smaller cost
 			{
 				totalCost = tempTotalCost;
@@ -1309,7 +1381,7 @@ namespace ServerAllocationProblem
 			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 			auto tempOutcome = Alg_LCP(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 			double tempTotalCost = get<0>(tempOutcome);
-			IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
+			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
 			if (tempTotalCost < totalCost) // choose the smaller cost
 			{
 				totalCost = tempTotalCost;
@@ -1389,13 +1461,12 @@ namespace ServerAllocationProblem
 			for (auto client : nextDC->unassignedCoverableClients) // client-to-datacenter assignment
 			{
 				client->assignedDatacenterID = nextDC->id;
-				nextDC->assignedClientList.push_back(client->id);
+				//nextDC->assignedClientList.push_back(client->id);
 				nextDC->assignedClients.push_back(client);
 			}
 		}
 
-		auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
-		return tuple<double, double, double, double, double>(get<0>(solutionOutput), get<1>(solutionOutput), get<2>(solutionOutput), get<3>(solutionOutput), get<4>(solutionOutput));
+		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
 	}
 
 	// Lowest-Capacity-Wastage-Assignment (LCW)
@@ -1428,7 +1499,7 @@ namespace ServerAllocationProblem
 				tempServerCountPerDC[dc->id] = dc->openServerCount;
 			}
 
-			IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
+			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
 
 			if (tempTotalCost < totalCost) // choose the smaller cost
 			{
@@ -1488,37 +1559,58 @@ namespace ServerAllocationProblem
 
 			// compute the average cost per client if opening a server in each dc		
 			for (auto dc : candidateDatacenters)
-			{
-				double unassignedCoverableClientCount = (double)dc->unassignedCoverableClients.size();
-
-				if (unassignedCoverableClientCount <= 0) // just in case
+			{				
+				if (dc->unassignedCoverableClients.empty())
 				{
 					dc->averageCostPerClient = INT_MAX;
 				}
-				else if (unassignedCoverableClientCount <= serverCapacity)
-				{
-					dc->averageCostPerClient = (dc->priceServer / unassignedCoverableClientCount) + dc->priceBandwidth;
+				else if (dc->unassignedCoverableClients.size() <= serverCapacity)
+				{					
+					double avgServerCostPerClient = dc->priceServer / dc->unassignedCoverableClients.size();
+					double totalChargedTrafficVolume = 0;
+					for (auto client : dc->unassignedCoverableClients)
+					{
+						totalChargedTrafficVolume += client->chargedTrafficVolume;
+					}
+					double avgBandwidthCostPerClient = (dc->priceBandwidth * totalChargedTrafficVolume) / dc->unassignedCoverableClients.size();
+					
+					dc->averageCostPerClient = avgServerCostPerClient + avgBandwidthCostPerClient;
 				}
 				else
 				{
-					dc->averageCostPerClient = (dc->priceServer / serverCapacity) + dc->priceBandwidth;
+					double avgServerCostPerClient = dc->priceServer / serverCapacity;
+					double totalChargedTrafficVolume = 0;
+					for (auto client : dc->unassignedCoverableClients)
+					{
+						totalChargedTrafficVolume += client->chargedTrafficVolume;
+					}
+					double avgBandwidthCostPerClient = (dc->priceBandwidth * totalChargedTrafficVolume) / dc->unassignedCoverableClients.size();
+
+					dc->averageCostPerClient = avgServerCostPerClient + avgBandwidthCostPerClient;
 				}
 			}
 
-			// assign at most (serverCapacity) unassignedCoverable clients to the dc with the lowest averageCostPerClient
-			DatacenterType* nextDC = *min_element(candidateDatacenters.begin(), candidateDatacenters.end(), DCComparatorByAverageCostPerClient);
+			//assign at most (serverCapacity) unassignedCoverable clients to the dc with the lowest averageCostPerClient
+			//DatacenterType* nextDC = *min_element(candidateDatacenters.begin(), candidateDatacenters.end(), DCComparatorByAverageCostPerClient);
+			auto nextDC = candidateDatacenters.front();
+			for (auto cdc : candidateDatacenters)
+			{
+				if (cdc->averageCostPerClient < nextDC->averageCostPerClient)
+				{
+					nextDC = cdc;
+				}
+			}
 			int unassignedCoverableClientCountNextDC = (int)nextDC->unassignedCoverableClients.size();
 			int numberOfClientsToBeAssigned = (unassignedCoverableClientCountNextDC <= serverCapacity) ? unassignedCoverableClientCountNextDC : (int)serverCapacity;
 			for (int i = 0; i < numberOfClientsToBeAssigned; i++)
 			{
 				nextDC->unassignedCoverableClients.at(i)->assignedDatacenterID = nextDC->id;
-				nextDC->assignedClientList.push_back(nextDC->unassignedCoverableClients.at(i)->id);
+				//nextDC->assignedClientList.push_back(nextDC->unassignedCoverableClients.at(i)->id);
 				nextDC->assignedClients.push_back(nextDC->unassignedCoverableClients.at(i));
 			}
 		}
 
-		auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
-		return tuple<double, double, double, double, double>(get<0>(solutionOutput), get<1>(solutionOutput), get<2>(solutionOutput), get<3>(solutionOutput), get<4>(solutionOutput));
+		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
 	}
 
 	// Lowest-Average-Cost-Assignment (LAC)
@@ -1551,7 +1643,7 @@ namespace ServerAllocationProblem
 				tempServerCountPerDC[dc->id] = dc->openServerCount;
 			}
 
-			IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
+			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
 
 			if (tempTotalCost < totalCost) // choose the smaller cost
 			{

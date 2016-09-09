@@ -14,8 +14,8 @@ namespace ServerAllocationProblem
 
 		map<int, double> delayToDatacenter; // delay values mapped with dc's id (fixed once initialized)
 
-		vector<tuple<int, double, double, double, double>> eligibleDatacenterList; // <dc's id, dc's delay, dc's server price, dc's bandwidth price, dc's combined price>
-		vector<DatacenterType*> eligibleDatacenters; // alternative way to access its eligible datacenters	
+		//vector<tuple<int, double, double, double, double>> eligibleDatacenterList; // <dc's id, dc's delay, dc's server price, dc's bandwidth price, dc's combined price>
+		vector<DatacenterType*> eligibleDatacenters;	
 
 		int assignedDatacenterID; // the id of the dc to which it is assigned	
 
@@ -29,19 +29,19 @@ namespace ServerAllocationProblem
 	struct DatacenterType
 	{	
 		int id; // id of this dc (fixed once initilized)
-		double priceServer; // server price (per server per session)
-		double priceBandwidth; // bandwidth price (per user per session)
-		double priceCombined; // for lower bound only	
+		double priceServer; // server price (per server per session duration that is supposed to be up to 1 hour)
+		double priceBandwidth; // bandwidth price per unit traffic volume (per GB)
+		//double priceCombined;
 
 		map<int, double> delayToClient; // delay value mapped with client's id (fixed once initialized)	
 		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)
 
 		ClientType* nearestClient; // its nearest client (fixed once initialized)
 
-		vector<int> coverableClientList; // clients within its coverage according to delay bounds
+		//vector<int> coverableClientList; // clients within its coverage according to delay bounds
 		vector<ClientType*> coverableClients; // alternative way to access its coverable clients
 
-		vector<int> assignedClientList;
+		//vector<int> assignedClientList;
 		vector<ClientType*> assignedClients;
 		double openServerCount;
 
@@ -54,22 +54,22 @@ namespace ServerAllocationProblem
 			this->id = givenID;
 			this->priceServer = 0;
 			this->priceBandwidth = 0;
-			this->priceCombined = 0;
+			//this->priceCombined = 0;
 		}
 	};
 
 	bool Initialize(string, vector<ClientType*> &, vector<DatacenterType*> &);
-	void SimulateBasicProblem(double, double, double, double SESSION_COUNT = 1);
-	void SimulateGeneralProblem(double, double, double, double SESSION_COUNT = 1);
+	void SimulateBasicProblem(double, double, double, double SESSION_COUNT = 1000);
+	void SimulateGeneralProblem(double, double, double, double SESSION_COUNT = 1000);
 
-	bool DCComparatorByPriceServer(DatacenterType* A, DatacenterType* B);
+	/*bool DCComparatorByPriceServer(DatacenterType* A, DatacenterType* B);
 	bool DCComparatorByPriceBandwidth(DatacenterType* A, DatacenterType* B);
 	bool DCComparatorByPriceCombined(DatacenterType* A, DatacenterType* B);
 	bool DCComparatorByAverageCostPerClient(DatacenterType* A, DatacenterType* B);
 	bool EligibleDCComparatorByDelay(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B);
 	bool EligibleDCComparatorByPriceServer(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B);
 	bool EligibleDCComparatorByPriceBandwidth(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B);
-	bool EligibleDCComparatorByPriceCombined(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B);
+	bool EligibleDCComparatorByPriceCombined(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B);*/
 
 	void ResetEligibiltyCoverability(const vector<ClientType*> &, const vector<DatacenterType*> &);
 	void ResetAssignment(const vector<ClientType*> &, const vector<DatacenterType*> &);	
@@ -96,7 +96,7 @@ namespace ServerAllocationProblem
 	// include G-server's cost into the total cost according to the group size
 	// used inside the following strategy functions
 	// for general problem only
-	void IncludeGServerCost(DatacenterType*, double, bool, double &);
+	//void IncludeGServerCost(DatacenterType*, double, bool, double &);
 
 	// function to get the solution output 
 	// return <cost_total, cost_server, cost_bandwidth, capacity_wastage, average_delay>

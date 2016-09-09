@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {	
-	double DELAY_BOUND_TO_G = 75, DELAY_BOUND_TO_R = 50, SESSION_SIZE = 10;
+	/*double DELAY_BOUND_TO_G = 75, DELAY_BOUND_TO_R = 50, SESSION_SIZE = 10;
 	if (argc >= 4)	
 	{
 		DELAY_BOUND_TO_G = std::stod(argv[1]);
@@ -15,10 +15,12 @@ int main(int argc, char *argv[])
 			cin.get();
 			return 0;
 		}
-	}
+	}*/
 
-	ServerAllocationProblem::SimulateBasicProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, 100);
-	ServerAllocationProblem::SimulateGeneralProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, 100);
+	ServerAllocationProblem::SimulateBasicProblem(75, 50, 10);
+	ServerAllocationProblem::SimulateBasicProblem(75, 50, 50);
+	ServerAllocationProblem::SimulateBasicProblem(150, 100, 10);
+	ServerAllocationProblem::SimulateBasicProblem(150, 100, 50);
 
 	return 0;
 }
