@@ -1,4 +1,4 @@
-#include "Simulation.h"
+#include "ServerAllocationProblem.h"
 
 int main(int argc, char *argv[])
 {	
@@ -18,10 +18,10 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	SimulationBasicProblem(75, 50, 10, 2, 100);
-	SimulationGeneralProblem(75, 50, 10, 2, 100);
-	//SimulationBasicProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, BANDWIDTH_INTENSITY);
-	//SimulationGeneralProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, BANDWIDTH_INTENSITY);
+	SimulateBasicProblem(75, 50, 10, 2, 100);
+	SimulateGeneralProblem(75, 50, 10, 2, 100);
+	//SimulateBasicProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, BANDWIDTH_INTENSITY);
+	//SimulateGeneralProblem(DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, SESSION_SIZE, BANDWIDTH_INTENSITY);
 
 	return 0;
 }

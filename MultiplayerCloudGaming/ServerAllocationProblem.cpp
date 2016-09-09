@@ -1,4 +1,4 @@
-#include "Simulation.h"
+#include "ServerAllocationProblem.h"
 
 bool DCComparatorByPriceServer(DatacenterClass* A, DatacenterClass* B)
 {
@@ -91,7 +91,7 @@ void ResetAssignment(const vector<ClientClass*> &clients, const vector<Datacente
 // matchmaking for basic problem
 // result: the datacenter for hosting the G-server, and a list of clients to be involved
 // return true if found
-bool MatchmakingProblemBasic(vector<DatacenterClass*> allDatacenters,
+bool Matchmaking4BasicProblem(vector<DatacenterClass*> allDatacenters,
 	vector<ClientClass*> allClients,
 	int &GDatacenterID,
 	vector<ClientClass*> &sessionClients,
@@ -183,7 +183,7 @@ void SearchEligibleGDatacenter(vector<DatacenterClass*> allDatacenters,
 // result: a list of datacenters that are eligible for hosting the G-server, and a list of clients to be involved 
 // return true if found
 // for general problem
-bool MatchmakingProblemGeneral(vector<DatacenterClass*> allDatacenters,
+bool Matchmaking4GeneralProblem(vector<DatacenterClass*> allDatacenters,
 	vector<ClientClass*> allClients,
 	vector<ClientClass*> &sessionClients,
 	vector<DatacenterClass*> &eligibleGDatacenters,
@@ -196,7 +196,7 @@ bool MatchmakingProblemGeneral(vector<DatacenterClass*> allDatacenters,
 	eligibleGDatacenters.clear();
 
 	int initialGDatacenter; // just for satisfying MatchmakingBasicProblem's parameters
-	if (MatchmakingProblemBasic(allDatacenters, allClients, initialGDatacenter, sessionClients, SESSION_SIZE, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R))
+	if (Matchmaking4BasicProblem(allDatacenters, allClients, initialGDatacenter, sessionClients, SESSION_SIZE, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R))
 	{
 		SearchEligibleGDatacenter(allDatacenters, sessionClients, eligibleGDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 	}
@@ -206,7 +206,7 @@ bool MatchmakingProblemGeneral(vector<DatacenterClass*> allDatacenters,
 
 // used inside each strategy function
 // for general problem
-void ExperimentSetupProblemGeneral(DatacenterClass *GDatacenter, vector<ClientClass*> sessionClients, vector<DatacenterClass*> allDatacenters, double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R)
+void SimulationSetup4GeneralProblem(DatacenterClass *GDatacenter, vector<ClientClass*> sessionClients, vector<DatacenterClass*> allDatacenters, double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R)
 {
 	ResetEligibleDatacentersCoverableClients(sessionClients, allDatacenters);
 
@@ -296,7 +296,7 @@ bool CheckIfAllClientsExactlyAssigned(vector<ClientClass*> sessionClients, vecto
 	return true;
 }
 
-bool SimulationPreparation(string dataDirectory, 
+bool Initialize(string dataDirectory, 
 	double BANDWIDTH_INTENSITY,
 	vector<vector<double>>& ClientToDatacenterDelayMatrix,
 	vector<vector<double>>& InterDatacenterDelayMatrix,
@@ -446,7 +446,7 @@ void WriteCostWastageDelayData(int STRATEGY_COUNT, vector<double> SERVER_CAPACIT
 	averageDelayStdFile.close();
 }
 
-void SimulationBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double BANDWIDTH_INTENSITY, double SESSION_COUNT)
+void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double BANDWIDTH_INTENSITY, double SESSION_COUNT)
 {
 	//srand((unsigned)time(nullptr)); // using current time as the seed for random_shuffle() and rand(), otherwise, they will generate the same sequence of random numbers in every run
 
@@ -459,7 +459,7 @@ void SimulationBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, do
 	vector<double> priceServerList;
 	vector<double> priceBandwidthList;
 
-	if (false == SimulationPreparation(dataDirectory, BANDWIDTH_INTENSITY, ClientToDatacenterDelayMatrix, InterDatacenterDelayMatrix, priceServerList, priceBandwidthList))
+	if (false == Initialize(dataDirectory, BANDWIDTH_INTENSITY, ClientToDatacenterDelayMatrix, InterDatacenterDelayMatrix, priceServerList, priceBandwidthList))
 	{
 		printf("ERROR: simulation preparation fails!");
 		cin.get();
@@ -527,7 +527,7 @@ void SimulationBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, do
 		int GDatacenterID;
 
 		auto matchmakingStartTime = clock();
-		bool isFeasibleSession = MatchmakingProblemBasic(allDatacenters, allClients, GDatacenterID, sessionClients, SESSION_SIZE, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
+		bool isFeasibleSession = Matchmaking4BasicProblem(allDatacenters, allClients, GDatacenterID, sessionClients, SESSION_SIZE, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 		matchmakingTimeAtAllSessions.push_back(difftime(clock(), matchmakingStartTime));
 
 		GDatacenterIDAtAllSessions.push_back(GDatacenterID);
@@ -696,7 +696,7 @@ void SimulationBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, do
 	return;
 }
 
-void SimulationGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double BANDWIDTH_INTENSITY, double SESSION_COUNT)
+void SimulateGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double BANDWIDTH_INTENSITY, double SESSION_COUNT)
 {
 	//srand((unsigned)time(nullptr)); // using current time as the seed for random_shuffle() and rand(), otherwise, they will generate the same sequence of random numbers in every run
 
@@ -709,7 +709,7 @@ void SimulationGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, 
 	vector<double> priceServerList;
 	vector<double> priceBandwidthList;
 
-	if (false == SimulationPreparation(dataDirectory, BANDWIDTH_INTENSITY, ClientToDatacenterDelayMatrix, InterDatacenterDelayMatrix, priceServerList, priceBandwidthList))
+	if (false == Initialize(dataDirectory, BANDWIDTH_INTENSITY, ClientToDatacenterDelayMatrix, InterDatacenterDelayMatrix, priceServerList, priceBandwidthList))
 	{
 		printf("ERROR: simulation preparation fails!\n");
 		cin.get();
@@ -789,7 +789,7 @@ void SimulationGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, 
 
 		auto matchmakingStartTime = clock();
 
-		bool isFeasibleSession = MatchmakingProblemGeneral(allDatacenters, allClients, sessionClients, eligibleGDatacenters, SESSION_SIZE, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
+		bool isFeasibleSession = Matchmaking4GeneralProblem(allDatacenters, allClients, sessionClients, eligibleGDatacenters, SESSION_SIZE, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 
 		matchmakingTimeAtAllSessions.push_back(difftime(clock(), matchmakingStartTime));
 
@@ -829,27 +829,27 @@ void SimulationGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, 
 				switch (strategyID)
 				{
 				case 1:
-					outcome = LB(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity, false);
+					outcome = LB(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 					break;
 
 				case 2:
-					outcome = RANDOM(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity, false);
+					outcome = RANDOM(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 					break;
 
 				case 3:
-					outcome = NEAREST(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity, false);
+					outcome = NEAREST(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 					break;
 
 				case 4:
-					outcome = LSP(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity, false);
+					outcome = LSP(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 					break;
 
 				case 5:
-					outcome = LBP(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity, false);
+					outcome = LBP(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 					break;
 
 				case 6:
-					outcome = LCP(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity, false);
+					outcome = LCP(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 					if (8 == serverCapacity)
 					{
 						for (auto dc : allDatacenters)
@@ -860,7 +860,7 @@ void SimulationGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, 
 					break;
 
 				case 7:
-					outcome = LCW(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity, false);
+					outcome = LCW(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 					if (8 == serverCapacity)
 					{
 						for (auto dc : allDatacenters)
@@ -871,7 +871,7 @@ void SimulationGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, 
 					break;
 
 				case 8:
-					outcome = LAC(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity, false);
+					outcome = LAC(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 					if (8 == serverCapacity)
 					{
 						for (auto dc : allDatacenters)
@@ -1067,7 +1067,7 @@ tuple<double, double, double, double, double> LB(
 
 	for (auto GDatacenter : eligibleGDatacenters)
 	{
-		ExperimentSetupProblemGeneral(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R); // initilization		
+		SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R); // initilization		
 		auto tempOutcome = LB(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 		double tempTotalCost = get<0>(tempOutcome);
 		IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
@@ -1121,7 +1121,7 @@ tuple<double, double, double, double, double> RANDOM(
 
 	for (auto GDatacenter : eligibleGDatacenters)
 	{
-		ExperimentSetupProblemGeneral(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R); // initilization		
+		SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R); // initilization		
 		auto tempOutcome = RANDOM(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 		double tempTotalCost = get<0>(tempOutcome);
 		IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
@@ -1177,7 +1177,7 @@ tuple<double, double, double, double, double> NEAREST(
 
 	for (auto GDatacenter : eligibleGDatacenters)
 	{
-		ExperimentSetupProblemGeneral(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R); // initilization				
+		SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R); // initilization				
 		auto tempOutcome = NEAREST(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 		double tempTotalCost = get<0>(tempOutcome);
 		IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
@@ -1281,7 +1281,7 @@ tuple<double, double, double, double, double> LSP(
 
 	for (auto GDatacenter : eligibleGDatacenters)
 	{
-		ExperimentSetupProblemGeneral(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
+		SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 		auto tempOutcome = LSP(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 		double tempTotalCost = get<0>(tempOutcome);
 
@@ -1334,7 +1334,7 @@ tuple<double, double, double, double, double> LBP(
 
 	for (auto GDatacenter : eligibleGDatacenters)
 	{
-		ExperimentSetupProblemGeneral(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
+		SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 		auto tempOutcome = LBP(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 		double tempTotalCost = get<0>(tempOutcome);
 		IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
@@ -1368,7 +1368,7 @@ tuple<double, double, double, double, double> LCP(
 
 	for (auto GDatacenter : eligibleGDatacenters)
 	{
-		ExperimentSetupProblemGeneral(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
+		SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 		auto tempOutcome = LCP(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 		double tempTotalCost = get<0>(tempOutcome);
 		IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
@@ -1479,7 +1479,7 @@ tuple<double, double, double, double, double> LCW(
 
 	for (auto GDatacenter : eligibleGDatacenters)
 	{
-		ExperimentSetupProblemGeneral(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
+		SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 		auto tempOutcome = LCW(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 		double tempTotalCost = get<0>(tempOutcome);
 
@@ -1601,7 +1601,7 @@ tuple<double, double, double, double, double> LAC(
 
 	for (auto GDatacenter : eligibleGDatacenters)
 	{
-		ExperimentSetupProblemGeneral(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
+		SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 		auto tempOutcome = LAC(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 		double tempTotalCost = get<0>(tempOutcome);
 

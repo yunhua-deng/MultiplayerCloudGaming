@@ -160,11 +160,11 @@
   <ItemGroup>
     <ClCompile Include="Base.cpp" />
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="Simulation.cpp" />
+    <ClCompile Include="ServerAllocationProblem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Base.h" />
-    <ClInclude Include="Simulation.h" />
+    <ClInclude Include="ServerAllocationProblem.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Data\dc_to_dc_rtt" />

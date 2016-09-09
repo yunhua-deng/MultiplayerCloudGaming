@@ -5,60 +5,6 @@
 
 #include "Base.h"
 
-class ClientClass;
-class DatacenterClass;
-
-class ClientClass
-{
-public:
-	int id; // global id (fixed once initialized)	
-
-	map<int, double> delayToDatacenter; // delay values mapped with dc's id (fixed once initialized)
-
-	vector<tuple<int, double, double, double, double>> eligibleDatacenterList; // <dc's id, dc's delay, dc's server price, dc's bandwidth price, dc's combined price>
-	vector<DatacenterClass*> eligibleDatacenters; // alternative way to access its eligible datacenters	
-
-	int assignedDatacenterID; // the id of the dc to which it is assigned
-
-	ClientClass(int givenID)
-	{
-		this->id = givenID;
-		this->assignedDatacenterID = -1;
-	}
-};
-
-class DatacenterClass
-{
-public:
-	int id; // id of this dc (fixed once initilized)
-	double priceServer; // server price (per server per session)
-	double priceBandwidth; // bandwidth price (per user per session)
-	double priceCombined; // for lower bound only	
-
-	map<int, double> delayToClient; // delay value mapped with client's id (fixed once initialized)	
-	map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)
-
-	ClientClass* nearestClient; // its nearest client (fixed once initialized)
-
-	vector<int> coverableClientList; // clients within its coverage according to delay bounds
-	vector<ClientClass*> coverableClients; // alternative way to access its coverable clients
-
-	vector<int> assignedClientList;
-	double openServerCount;
-
-	vector<ClientClass*> unassignedCoverableClients; // to be used by some algorithms
-
-	double averageCostPerClient; // to be used by some algorithms
-
-	DatacenterClass(int givenID)
-	{
-		this->id = givenID;
-		this->priceServer = 0;
-		this->priceBandwidth = 0;
-		this->priceCombined = 0;
-	}
-};
-
 bool DCComparatorByPriceServer(DatacenterClass* A, DatacenterClass* B);
 bool DCComparatorByPriceBandwidth(DatacenterClass* A, DatacenterClass* B);
 bool DCComparatorByPriceCombined(DatacenterClass* A, DatacenterClass* B);
@@ -67,13 +13,14 @@ bool EligibleDCComparatorByDelay(const tuple<int, double, double, double, double
 bool EligibleDCComparatorByPriceServer(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B);
 bool EligibleDCComparatorByPriceBandwidth(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B);
 bool EligibleDCComparatorByPriceCombined(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B);
+
 void ResetEligibleDatacentersCoverableClients(const vector<ClientClass*> &clients, const vector<DatacenterClass*> &datacenters);
 void ResetAssignment(const vector<ClientClass*> &clients, const vector<DatacenterClass*> &datacenters);
 
 // matchmaking for basic problem
 // result: the datacenter for hosting the G-server, and a list of clients to be involved
 // return true if found
-bool MatchmakingProblemBasic(vector<DatacenterClass*> allDatacenters,
+bool Matchmaking4BasicProblem(vector<DatacenterClass*> allDatacenters,
 	vector<ClientClass*> allClients,
 	int &GDatacenterID,
 	vector<ClientClass*> &sessionClients,
@@ -93,7 +40,7 @@ void SearchEligibleGDatacenter(vector<DatacenterClass*> allDatacenters,
 // result: a list of datacenters that are eligible for hosting the G-server, and a list of clients to be involved 
 // return true if found
 // for general problem
-bool MatchmakingProblemGeneral(vector<DatacenterClass*> allDatacenters,
+bool Matchmaking4GeneralProblem(vector<DatacenterClass*> allDatacenters,
 	vector<ClientClass*> allClients,
 	vector<ClientClass*> &sessionClients,
 	vector<DatacenterClass*> &eligibleGDatacenters,
@@ -103,7 +50,7 @@ bool MatchmakingProblemGeneral(vector<DatacenterClass*> allDatacenters,
 
 // used inside each strategy function
 // for general problem
-void ExperimentSetupProblemGeneral(DatacenterClass *GDatacenter,
+void SimulationSetup4GeneralProblem(DatacenterClass *GDatacenter,
 	vector<ClientClass*> sessionClients,
 	vector<DatacenterClass*> allDatacenters,
 	double DELAY_BOUND_TO_G,
@@ -125,7 +72,7 @@ tuple<double, double, double, double, double> GetSolutionOutput(
 // return true if and only if all clients are assigned and each client is assigned to one dc
 bool CheckIfAllClientsExactlyAssigned(vector<ClientClass*> sessionClients, vector<DatacenterClass*> allDatacenters);
 
-bool SimulationPreparation(string dataDirectory, double BANDWIDTH_INTENSITY,
+bool Initialize(string dataDirectory, double BANDWIDTH_INTENSITY,
 	vector<vector<double>>& ClientToDatacenterDelayMatrix,
 	vector<vector<double>>& InterDatacenterDelayMatrix,
 	vector<double>& priceServerList,
@@ -135,9 +82,9 @@ void WriteCostWastageDelayData(int STRATEGY_COUNT, vector<double> SERVER_CAPACIT
 	vector<vector<vector<tuple<double, double, double, double, double>>>>& outcomeAtAllSessions,
 	string dataDirectory, string experimentSettings);
 
-void SimulationBasicProblem(double DELAY_BOUND_TO_G = 150, double DELAY_BOUND_TO_R = 100, double SESSION_SIZE = 10, double BANDWIDTH_INTENSITY = 2, double SESSION_COUNT = 1000);
+void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double BANDWIDTH_INTENSITY, double SESSION_COUNT);
 
-void SimulationGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double BANDWIDTH_INTENSITY, double SESSION_COUNT);
+void SimulateGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double BANDWIDTH_INTENSITY, double SESSION_COUNT);
 
 // Lower-Bound (LB)
 // for basic problem
@@ -157,7 +104,7 @@ tuple<double, double, double, double, double> LB(
 	double DELAY_BOUND_TO_G,
 	double DELAY_BOUND_TO_R,
 	double serverCapacity,
-	bool includingGServerCost);
+	bool includingGServerCost = false);
 
 // Random-Assignment
 // for basic problem
@@ -177,7 +124,7 @@ tuple<double, double, double, double, double> RANDOM(
 	double DELAY_BOUND_TO_G,
 	double DELAY_BOUND_TO_R,
 	double serverCapacity,
-	bool includingGServerCost);
+	bool includingGServerCost = false);
 
 // Nearest-Assignment
 // for basic problem
@@ -197,7 +144,7 @@ tuple<double, double, double, double, double> NEAREST(
 	double DELAY_BOUND_TO_G,
 	double DELAY_BOUND_TO_R,
 	double serverCapacity,
-	bool includingGServerCost);
+	bool includingGServerCost = false);
 
 // Lowest-Server-Price-Datacenter-Assignment (LSP)
 // for basic problem
@@ -233,7 +180,7 @@ tuple<double, double, double, double, double> LSP(
 	double DELAY_BOUND_TO_G,
 	double DELAY_BOUND_TO_R,
 	double serverCapacity,
-	bool includingGServerCost);
+	bool includingGServerCost = false);
 
 // Lowest-Bandwidth-Price-Datacenter-Assignment (LBP)
 // overloaded for general problem
@@ -245,7 +192,7 @@ tuple<double, double, double, double, double> LBP(
 	double DELAY_BOUND_TO_G,
 	double DELAY_BOUND_TO_R,
 	double serverCapacity,
-	bool includingGServerCost);
+	bool includingGServerCost = false);
 
 // Lowest-Combined-Price-Datacenter-Assignment (LCP)
 // overloaded for general problem
@@ -257,7 +204,7 @@ tuple<double, double, double, double, double> LCP(
 	double DELAY_BOUND_TO_G,
 	double DELAY_BOUND_TO_R,
 	double serverCapacity,
-	bool includingGServerCost);
+	bool includingGServerCost = false);
 
 // Lowest-Capacity-Wastage-Assignment (LCW)
 // if server capacity < 2, reduce to LCP
@@ -278,7 +225,7 @@ tuple<double, double, double, double, double> LCW(
 	double DELAY_BOUND_TO_G,
 	double DELAY_BOUND_TO_R,
 	double serverCapacity,
-	bool includingGServerCost);
+	bool includingGServerCost = false);
 
 // Lowest-Average-Cost-Assignment (LAC)
 // Idea: open exactly one server at each iteration, and where to open the server is determined based on the average cost contributed by all clients that are to be assigned to this server
@@ -300,4 +247,4 @@ tuple<double, double, double, double, double> LAC(
 	double DELAY_BOUND_TO_G,
 	double DELAY_BOUND_TO_R,
 	double serverCapacity,
-	bool includingGServerCost);
+	bool includingGServerCost = false);
