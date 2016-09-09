@@ -20,12 +20,18 @@
     <ClCompile Include="ServerAllocationProblem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="MatchmakingProblem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Base.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ServerAllocationProblem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MatchmakingProblem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

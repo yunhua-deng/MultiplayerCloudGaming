@@ -85,6 +85,7 @@ void ResetAssignment(const vector<ClientClass*> &clients, const vector<Datacente
 	for (auto d : datacenters)
 	{
 		d->assignedClientList.clear();
+		d->assignedClients.clear();
 	}
 }
 
@@ -259,8 +260,8 @@ tuple<double, double, double, double, double> GetSolutionOutput(
 		dc->openServerCount = ceil(dc->assignedClientList.size() / serverCapacity);
 
 		numberServers += dc->openServerCount;
-		costServer += dc->openServerCount * dc->priceServer;
-		costBandwidth += dc->assignedClientList.size() * dc->priceBandwidth;
+		costServer += dc->openServerCount * dc->priceServer;		
+		for (auto it : dc->assignedClients) costBandwidth += it->trafficVolume * dc->priceBandwidth;
 	}
 
 	for (auto client : sessionClients)
@@ -296,8 +297,7 @@ bool CheckIfAllClientsExactlyAssigned(vector<ClientClass*> sessionClients, vecto
 	return true;
 }
 
-bool Initialize(string dataDirectory, 
-	double BANDWIDTH_INTENSITY,
+bool InputData(string dataDirectory,
 	vector<vector<double>>& ClientToDatacenterDelayMatrix,
 	vector<vector<double>>& InterDatacenterDelayMatrix,
 	vector<double>& priceServerList,
@@ -446,7 +446,7 @@ void WriteCostWastageDelayData(int STRATEGY_COUNT, vector<double> SERVER_CAPACIT
 	averageDelayStdFile.close();
 }
 
-void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double BANDWIDTH_INTENSITY, double SESSION_COUNT)
+void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double SESSION_COUNT)
 {
 	//srand((unsigned)time(nullptr)); // using current time as the seed for random_shuffle() and rand(), otherwise, they will generate the same sequence of random numbers in every run
 
@@ -459,7 +459,7 @@ void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, doub
 	vector<double> priceServerList;
 	vector<double> priceBandwidthList;
 
-	if (false == Initialize(dataDirectory, BANDWIDTH_INTENSITY, ClientToDatacenterDelayMatrix, InterDatacenterDelayMatrix, priceServerList, priceBandwidthList))
+	if (false == InputData(dataDirectory, ClientToDatacenterDelayMatrix, InterDatacenterDelayMatrix, priceServerList, priceBandwidthList))
 	{
 		printf("ERROR: simulation preparation fails!");
 		cin.get();
@@ -473,7 +473,7 @@ void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, doub
 	vector<ClientClass*> allClients;
 	for (int i = 0; i < totalClientCount; i++)
 	{
-		ClientClass* client = new ClientClass(i);
+		ClientClass* client = new ClientClass(i);		
 		for (int j = 0; j < totalDatacenterCount; j++)
 		{
 			client->delayToDatacenter[j] = ClientToDatacenterDelayMatrix.at(i).at(j);
@@ -487,21 +487,16 @@ void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, doub
 	for (int i = 0; i < totalDatacenterCount; i++)
 	{
 		DatacenterClass* dc = new DatacenterClass(i);
-
 		dc->priceServer = priceServerList.at(i);
-
 		dc->priceBandwidth = priceBandwidthList.at(i);
-
 		for (auto client : allClients)
 		{
 			dc->delayToClient[client->id] = client->delayToDatacenter[dc->id];
 		}
-
 		for (int j = 0; j < totalDatacenterCount; j++)
 		{
 			dc->delayToDatacenter[j] = InterDatacenterDelayMatrix.at(i).at(j);
 		}
-
 		allDatacenters.push_back(dc);
 	}
 	printf("%d datacenters created according to the input latency data file\n", totalDatacenterCount);
@@ -624,7 +619,7 @@ void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, doub
 
 	/*******************************************************************************************************/
 
-	string experimentSettings = std::to_string((int)DELAY_BOUND_TO_G) + "_" + std::to_string((int)DELAY_BOUND_TO_R) + "_" + std::to_string((int)SESSION_SIZE) + "_" + std::to_string((int)BANDWIDTH_INTENSITY);
+	string experimentSettings = std::to_string((int)DELAY_BOUND_TO_G) + "_" + std::to_string((int)DELAY_BOUND_TO_R) + "_" + std::to_string((int)SESSION_SIZE);
 
 	// record cost, wastage and delay
 	WriteCostWastageDelayData(STRATEGY_COUNT, SERVER_CAPACITY_LIST, SESSION_COUNT, outcomeAtAllSessions, dataDirectory, experimentSettings);
@@ -696,7 +691,7 @@ void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, doub
 	return;
 }
 
-void SimulateGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double BANDWIDTH_INTENSITY, double SESSION_COUNT)
+void SimulateGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double SESSION_COUNT)
 {
 	//srand((unsigned)time(nullptr)); // using current time as the seed for random_shuffle() and rand(), otherwise, they will generate the same sequence of random numbers in every run
 
@@ -709,7 +704,7 @@ void SimulateGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, do
 	vector<double> priceServerList;
 	vector<double> priceBandwidthList;
 
-	if (false == Initialize(dataDirectory, BANDWIDTH_INTENSITY, ClientToDatacenterDelayMatrix, InterDatacenterDelayMatrix, priceServerList, priceBandwidthList))
+	if (false == InputData(dataDirectory, ClientToDatacenterDelayMatrix, InterDatacenterDelayMatrix, priceServerList, priceBandwidthList))
 	{
 		printf("ERROR: simulation preparation fails!\n");
 		cin.get();
@@ -917,7 +912,7 @@ void SimulateGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, do
 
 	/*******************************************************************************************************/
 
-	string experimentSettings = std::to_string((int)DELAY_BOUND_TO_G) + "_" + std::to_string((int)DELAY_BOUND_TO_R) + "_" + std::to_string((int)SESSION_SIZE) + "_" + std::to_string((int)BANDWIDTH_INTENSITY);
+	string experimentSettings = std::to_string((int)DELAY_BOUND_TO_G) + "_" + std::to_string((int)DELAY_BOUND_TO_R) + "_" + std::to_string((int)SESSION_SIZE);
 
 	// record cost, wastage and delay
 	WriteCostWastageDelayData(STRATEGY_COUNT, SERVER_CAPACITY_LIST, SESSION_COUNT, outcomeAtAllSessions, dataDirectory, experimentSettings);
@@ -1023,6 +1018,7 @@ tuple<double, double, double, double, double> LB(
 			EligibleDCComparatorByPriceCombined));
 
 		allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id);
+		allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 	}
 
 	double costServer = 0, costBandwidth = 0, numberServers = 0, totalDelay = 0;
@@ -1033,7 +1029,7 @@ tuple<double, double, double, double, double> LB(
 		numberServers += dc->openServerCount;
 
 		costServer += dc->openServerCount * dc->priceServer;
-		costBandwidth += dc->assignedClientList.size() * dc->priceBandwidth;
+		for (auto it : dc->assignedClients) costBandwidth += it->trafficVolume * dc->priceBandwidth;
 	}
 
 	for (auto client : sessionClients)
@@ -1096,7 +1092,9 @@ tuple<double, double, double, double, double> RANDOM(
 	for (auto client : sessionClients) // choose a dc for each client
 	{
 		client->assignedDatacenterID = get<0>(client->eligibleDatacenterList.at(rand() % (int)client->eligibleDatacenterList.size()));
+		
 		allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+		allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 	}
 
 	auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
@@ -1149,10 +1147,10 @@ tuple<double, double, double, double, double> NEAREST(
 
 	for (auto client : sessionClients)
 	{
-		client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(),
-			EligibleDCComparatorByDelay)); // choose the nearest eligible dc for each client		
+		client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByDelay)); // choose the nearest eligible dc for each client		
 
 		allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+		allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 	}
 
 	auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
@@ -1205,10 +1203,10 @@ tuple<double, double, double, double, double> LSP(
 
 	for (auto client : sessionClients)
 	{
-		client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(),
-			EligibleDCComparatorByPriceServer));
+		client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceServer));
 
 		allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+		allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 	}
 
 	auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
@@ -1228,10 +1226,10 @@ tuple<double, double, double, double, double> LBP(
 	auto clock_begin = clock();
 	for (auto client : sessionClients)
 	{
-		client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(),
-			EligibleDCComparatorByPriceBandwidth));
+		client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceBandwidth));
 
 		allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+		allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 	}
 
 	auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
@@ -1250,10 +1248,10 @@ tuple<double, double, double, double, double> LCP(
 
 	for (auto client : sessionClients)
 	{
-		client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(),
-			EligibleDCComparatorByPriceCombined));
+		client->assignedDatacenterID = get<0>(*min_element(client->eligibleDatacenterList.begin(), client->eligibleDatacenterList.end(), EligibleDCComparatorByPriceCombined));
 
 		allDatacenters.at(client->assignedDatacenterID)->assignedClientList.push_back(client->id); // add this client to the chosen dc's assigned client list
+		allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 	}
 
 	auto solutionOutput = GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
@@ -1452,6 +1450,7 @@ tuple<double, double, double, double, double> LCW(
 		{
 			client->assignedDatacenterID = nextDC->id;
 			nextDC->assignedClientList.push_back(client->id);
+			nextDC->assignedClients.push_back(client);
 		}
 	}
 
@@ -1574,6 +1573,7 @@ tuple<double, double, double, double, double> LAC(
 		{
 			nextDC->unassignedCoverableClients.at(i)->assignedDatacenterID = nextDC->id;
 			nextDC->assignedClientList.push_back(nextDC->unassignedCoverableClients.at(i)->id);
+			nextDC->assignedClients.push_back(nextDC->unassignedCoverableClients.at(i));
 		}
 	}
 
