@@ -1,56 +1,7 @@
 #include "ServerAllocationProblem.h"
 
 namespace ServerAllocationProblem
-{
-	//bool DCComparatorByPriceServer(DatacenterType* A, DatacenterType* B)
-	//{
-	//	return (A->priceServer < B->priceServer);
-	//}
-	//bool DCComparatorByPriceBandwidth(DatacenterType* A, DatacenterType* B)
-	//{
-	//	return (A->priceBandwidth < B->priceBandwidth);
-	//}
-	//bool DCComparatorByPriceCombined(DatacenterType* A, DatacenterType* B)
-	//{
-	//	return (A->priceCombined < B->priceCombined);
-	//}
-	//bool DCComparatorByAverageCostPerClient(DatacenterType* A, DatacenterType* B)
-	//{
-	//	return (A->averageCostPerClient < B->averageCostPerClient);
-	//}
-	//bool EligibleDCComparatorByDelay(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
-	//{
-	//	if (get<1>(A) < get<1>(B))
-	//		return true;
-	//	else if (get<1>(A) == get<1>(B)) // if latencies tie
-	//		return (get<2>(A) < get<2>(B)); // choose the one with lower server price
-	//	return false;
-	//}
-	//bool EligibleDCComparatorByPriceServer(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
-	//{
-	//	if (get<2>(A) < get<2>(B))
-	//		return true;
-	//	else if (get<2>(A) == get<2>(B)) // if server prices tie
-	//		return (get<1>(A) < get<1>(B)); // choose the one with lower latency
-	//	return false;
-	//}
-	//bool EligibleDCComparatorByPriceBandwidth(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
-	//{
-	//	if (get<3>(A) < get<3>(B))
-	//		return true;
-	//	else if (get<3>(A) == get<3>(B)) // if bandwidth prices tie
-	//		return (get<1>(A) < get<1>(B)); // choose the one with lower latency
-	//	return false;
-	//}
-	//bool EligibleDCComparatorByPriceCombined(const tuple<int, double, double, double, double> &A, const tuple<int, double, double, double, double> &B)
-	//{
-	//	if (get<4>(A) < get<4>(B))
-	//		return true;
-	//	else if (get<4>(A) == get<4>(B)) // if combined prices tie
-	//		return (get<1>(A) < get<1>(B)); // choose the one with lower latency
-	//	return false;
-	//}
-
+{	
 	void ResetEligibiltyCoverability(const vector<ClientType*> &clients, const vector<DatacenterType*> &datacenters)
 	{
 		for (auto c : clients)
@@ -221,7 +172,7 @@ namespace ServerAllocationProblem
 	// include G-server's cost into the total cost according to the group size
 	// used inside the following strategy functions
 	// for general problem only
-	/*void IncludeGServerCost(DatacenterType *GDatacenter, double SESSION_SIZE, bool includingGServerCost, double &tempTotalCost)
+	void IncludeGServerCost(DatacenterType *GDatacenter, double SESSION_SIZE, bool includingGServerCost, double &tempTotalCost)
 	{
 		if (includingGServerCost)
 		{
@@ -234,7 +185,7 @@ namespace ServerAllocationProblem
 			else
 				tempTotalCost += GDatacenter->priceServer;
 		}
-	}*/
+	}
 
 	// function to get the solution output 
 	// return <cost_total, cost_server, cost_bandwidth, capacity_wastage, average_delay>
@@ -310,6 +261,12 @@ namespace ServerAllocationProblem
 		
 		/* client-to-dc latency data */
 		auto strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + "dc_to_pl_rtt.csv", ',', true);
+		if (strings_read.empty())
+		{	
+			printf("ERROR: empty file!\n");
+			cin.get();
+			return false;
+		}
 		for (auto row : strings_read)
 		{
 			vector<double> ClientToDatacenterDelayMatrixOneRow;
@@ -322,6 +279,12 @@ namespace ServerAllocationProblem
 
 		/*dc-to-dc latency data*/
 		strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + "dc_to_dc_rtt.csv", ',', true);
+		if (strings_read.empty())
+		{
+			printf("ERROR: empty file!\n");
+			cin.get();
+			return false;
+		}
 		for (auto row : strings_read)
 		{
 			vector<double> InterDatacenterDelayMatrixOneRow;
@@ -335,6 +298,12 @@ namespace ServerAllocationProblem
 
 		/* bandwidth and server price data */
 		strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + "dc_pricing_bandwidth_server.csv", ',', true);
+		if (strings_read.empty())
+		{
+			printf("ERROR: empty file!\n");
+			cin.get();
+			return false;
+		}
 		for (auto row : strings_read)
 		{
 			priceBandwidthList.push_back(stod(row.at(1)));
@@ -497,7 +466,7 @@ namespace ServerAllocationProblem
 		vector<DatacenterType*> allDatacenters;
 		if (!Initialize(dataDirectory, allClients, allDatacenters))
 		{
-			printf("ERROR: simulation initialization failed!");
+			printf("ERROR: simulation initialization failed!\n");
 			cin.get();
 			return;
 		}

@@ -11,9 +11,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Base.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -21,6 +18,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MatchmakingProblem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -34,5 +34,11 @@
     <ClInclude Include="MatchmakingProblem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MultiplayerCloudGaming.rc" />
   </ItemGroup>
 </Project>

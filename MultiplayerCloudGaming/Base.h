@@ -6,12 +6,10 @@
 #include <set>
 #include <map>
 #include <string>
+#include <sstream>
 #include <iostream>
 #include <fstream>
-#include <sstream>
-#include <cstdlib>
-#include <algorithm>
-#include <iterator>
+#include <algorithm> // random_shuffle
 #include <ctime>
 #include <cmath>
 #include <direct.h>
