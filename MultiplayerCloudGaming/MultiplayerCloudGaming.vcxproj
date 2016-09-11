@@ -166,11 +166,7 @@
   <ItemGroup>
     <ClInclude Include="Base.h" />
     <ClInclude Include="MatchmakingProblem.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="ServerAllocationProblem.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="MultiplayerCloudGaming.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
