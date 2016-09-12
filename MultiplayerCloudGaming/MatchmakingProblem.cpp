@@ -122,32 +122,41 @@ namespace MatchmakingProblem
 		return nearest;
 	}
 
-	void MaximumMatchingProblem::Simulate(const int latencyThreshold, const int clientCount, const int sessionSize, const int simulationCount)
+	void MaximumMatchingProblem::Simulate(const int clientCount, const int latencyThreshold, const int sessionSize, const int simulationCount)
 	{
-		printf("simulation settings: latencyThreshold = %d | clientCount = %d\n", latencyThreshold, clientCount);
+		printf("latencyThreshold = %d | clientCount = %d | ", latencyThreshold, clientCount);
 
 		/*initialize global stuff*/
 		Initialize();
-		
-		/*check if sth wrong*/
-		if (clientCount > globalClientList.size())
-		{
-			printf("ERROR: clientCount too large!\n");
-			cin.get();
-			return;
-		}
 
 		/*random number seed*/
 		std::srand(2);
 		//std::srand(time(NULL));
 
+		/*stuff to record performance*/
+		vector<double> successRate;
+
 		/*run simulation round by round*/
-		for (int round = 0; round < simulationCount; round++)
+		for (int round = 1; round <= simulationCount; round++)
 		{	
 			/*generate a set of random candidateClients according to the clientCount parameters*/
-			auto globalClientListCopy = globalClientList; // avoid modifying the original globalClientList		 
-			random_shuffle(globalClientListCopy.begin(), globalClientListCopy.end());
-			candidateClients.assign(globalClientListCopy.begin(), globalClientListCopy.begin() + clientCount);
+			auto globalClientListCopy = globalClientList; // avoid modifying the original globalClientList	 
+			if (clientCount <= globalClientList.size())
+			{
+				random_shuffle(globalClientListCopy.begin(), globalClientListCopy.end());
+				candidateClients.assign(globalClientListCopy.begin(), globalClientListCopy.begin() + clientCount);
+			}
+			else // in case if the clientCount is greater than the total number of clients loaded from the dataset
+			{
+				while (candidateClients.size() < clientCount)
+				{
+					random_shuffle(globalClientListCopy.begin(), globalClientListCopy.end());
+					for (auto& client : globalClientList)
+					{
+						candidateClients.push_back(client);
+					}
+				}
+			}
 
 			/*every round we use the same candidate datacenters (i.e., all datacenters)*/
 			candidateDatacenters = globalDatacenterList;
@@ -168,15 +177,17 @@ namespace MatchmakingProblem
 			/*nearest assignment*/
 			NearestAssignmentGrouping();
 			double totalEligibleClients = 0;
-			double totalGroupedClients = 0;
+			double totalGroupedClients = 0;			
 			for (auto& dc : candidateDatacenters)
 			{
 				totalEligibleClients += dc.assignedClients.size();
 				totalGroupedClients += std::floor(dc.assignedClients.size() / sessionSize) * sessionSize;
+				successRate.push_back(totalGroupedClients / totalEligibleClients);
 			}
 			//printf("totalGroupedClients = %d vs totalEligibleClients = %d -> %.2f grouping rate\n", (int)totalGroupedClients, (int)totalEligibleClients, totalGroupedClients / totalEligibleClients);
-			printf("grouping success rate = %.2f\n", totalGroupedClients / totalEligibleClients);
+			//printf("grouping success rate = %.2f\n", totalGroupedClients / totalEligibleClients);
 		}
+		printf("average succesRate = %.2f\n", GetMeanValue(successRate));
 	}
 
 	void MaximumMatchingProblem::NearestAssignmentGrouping()

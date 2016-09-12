@@ -49,7 +49,7 @@ namespace MatchmakingProblem
 	class MaximumMatchingProblem : public MatchmakingProblemBase
 	{
 	public:
-		void Simulate(const int latencyThreshold = 100, const int clientCount = 100, const int sessionSize = 10, const int simulationCount = 100);
+		void Simulate(const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int simulationCount = 1000);
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;
