@@ -26,9 +26,10 @@ int main(int argc, char *argv[])
 
 	/*MatchmakingProblem*/
 	auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
-	for (int clientCount : { 25, 50, 100, 200, 400, 800 })
-		for (int latencyThreshold : { 25, 50, 100 })
-			simulator.Simulate(clientCount, latencyThreshold);
+	for (int clientCount : { 100, 200, 400, 800, 1600, 6400 })
+	{
+		simulator.Simulate(clientCount);
+	}
 
 	return 0;
 }
