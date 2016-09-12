@@ -13,7 +13,7 @@ namespace MatchmakingProblem
 		double chargedTrafficVolume;
 		map<int, double> delayToDatacenter;
 		vector<DatacenterType*> eligibleDatacenters;
-		DatacenterType* assignedDatacenter;
+		DatacenterType* assignedDatacenter = nullptr;
 
 		ClientType(int givenID)
 		{
@@ -38,23 +38,22 @@ namespace MatchmakingProblem
 	};
 	
 	class MatchmakingProblemBase
-	{	
-	public:
-		void Initialize(const string givenDataDirectory = ".\\Data\\");
+	{			
 	protected:		
 		string dataDirectory; // root path for input and output
 		vector<ClientType> globalClientList; // read from input
 		vector<DatacenterType> globalDatacenterList; // read from input
+		void Initialize(const string givenDataDirectory = ".\\Data\\");
 	};
 
 	class MaximumMatchingProblem : public MatchmakingProblemBase
 	{
 	public:
-		void RunSimulation();
+		void Simulate(const int latencyThreshold = 100, const int clientCount = 100, const int sessionSize = 10, const int simulationCount = 100);
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;
-		void SetupSimulation(const double clientPopulation = 100, const double latencyThreshold = 100, const double sessionSize = 10);
+		void NearestAssignmentGrouping();
 	};
 
 	DatacenterType* GetClientNearestDC(ClientType & client);

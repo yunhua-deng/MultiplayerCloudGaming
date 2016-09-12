@@ -505,7 +505,7 @@ namespace ServerAllocationProblem
 			}
 
 			printf("------------------------------------------------------------------------\n");
-			printf("delay bounds: (%d, %d) \t session size: %d \t session: %d\n", (int)DELAY_BOUND_TO_G, (int)DELAY_BOUND_TO_R, (int)SESSION_SIZE, sessionID);
+			printf("delay bounds: (%d, %d) session size: %d session: %d\n", (int)DELAY_BOUND_TO_G, (int)DELAY_BOUND_TO_R, (int)SESSION_SIZE, sessionID);
 			printf("executing strategies\n");
 
 			vector<vector<tuple<double, double, double, double, double>>> outcomeAtOneSession; // per session
@@ -713,7 +713,7 @@ namespace ServerAllocationProblem
 			}
 
 			printf("------------------------------------------------------------------------");
-			printf("delay bounds: (%d, %d) \t session size: %d \t session: %d\n", (int)DELAY_BOUND_TO_G, (int)DELAY_BOUND_TO_R, (int)SESSION_SIZE, sessionID);
+			printf("delay bounds: (%d, %d)   session size: %d   session: %d\n", (int)DELAY_BOUND_TO_G, (int)DELAY_BOUND_TO_R, (int)SESSION_SIZE, sessionID);
 			printf("start of one session\n");
 
 			vector<vector<tuple<double, double, double, double, double>>> outcomeAtOneSession; // per session
@@ -892,8 +892,8 @@ namespace ServerAllocationProblem
 		{
 			for (int i = 0; i < STRATEGY_COUNT; i++)
 			{
-				computationMeanFile << GetMeanValue(computationStrategyCapacitySession.at(i).at(j)) << "\t";
-				computationStdFile << GetStdValue(computationStrategyCapacitySession.at(i).at(j)) << "\t";
+				computationMeanFile << GetMeanValue(computationStrategyCapacitySession.at(i).at(j)) << " ";
+				computationStdFile << GetStdValue(computationStrategyCapacitySession.at(i).at(j)) << " ";
 			}
 			computationMeanFile << "\n";
 			computationStdFile << "\n";

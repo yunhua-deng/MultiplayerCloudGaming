@@ -11,12 +11,8 @@ namespace ServerAllocationProblem
 	{
 		int id; // global id (fixed once initialized)	
 		double chargedTrafficVolume;
-
-		map<int, double> delayToDatacenter; // delay values mapped with dc's id (fixed once initialized)
-
-		//vector<tuple<int, double, double, double, double>> eligibleDatacenterList; // <dc's id, dc's delay, dc's server price, dc's bandwidth price, dc's combined price>
+		map<int, double> delayToDatacenter; // delay values mapped with dc's id (fixed once initialized)		
 		vector<DatacenterType*> eligibleDatacenters;
-
 		int assignedDatacenterID; // the id of the dc to which it is assigned	
 
 		ClientType(int givenID)
@@ -30,28 +26,19 @@ namespace ServerAllocationProblem
 	{
 		int id; // id of this dc (fixed once initilized)
 		double priceServer; // server price (per server per session duration that is supposed to be up to 1 hour)
-		double priceBandwidth; // bandwidth price per unit traffic volume (per GB)						   
-
+		double priceBandwidth; // bandwidth price per unit traffic volume (per GB)
 		map<int, double> delayToClient; // delay value mapped with client's id (fixed once initialized)	
-		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)
-
-		//vector<int> coverableClientList; // clients within its coverage according to delay bounds
-		vector<ClientType*> coverableClients; // alternative way to access its coverable clients
-
-		//vector<int> assignedClientList;
+		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)		
+		vector<ClientType*> coverableClients; // alternative way to access its coverable clients		
 		vector<ClientType*> assignedClients;
 		double openServerCount;
-
 		vector<ClientType*> unassignedCoverableClients; // to be used by some algorithms
-
 		double averageCostPerClient; // to be used by some algorithms
-
 		DatacenterType(int givenID)
 		{
 			this->id = givenID;
 			this->priceServer = 0;
 			this->priceBandwidth = 0;
-			//this->priceCombined = 0;
 		}
 	};
 	

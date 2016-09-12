@@ -18,18 +18,15 @@ int main(int argc, char *argv[])
 	}
 	}*/
 
+	/*ServerAllocationProblem*/
 	/*ServerAllocationProblem::SimulateBasicProblem(75, 50, 10);
 	ServerAllocationProblem::SimulateBasicProblem(75, 50, 50);
 	ServerAllocationProblem::SimulateBasicProblem(150, 100, 10);
 	ServerAllocationProblem::SimulateBasicProblem(150, 100, 50);*/
 
-	auto one_instance = MatchmakingProblem::MaximumMatchingProblem();	
-	one_instance.Initialize();
-	while (true)
-	{
-		one_instance.RunSimulation();
-		cin.get();
-	}
+	/*MatchmakingProblem*/
+	auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
+	simulator.Simulate();
 
 	return 0;
 }
