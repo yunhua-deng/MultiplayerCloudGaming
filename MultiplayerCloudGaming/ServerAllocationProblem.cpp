@@ -2,22 +2,20 @@
 
 namespace ServerAllocationProblem
 {	
-	void ResetEligibiltyCoverability(const vector<ClientType*> &clients, const vector<DatacenterType*> &datacenters)
+	void ResetEligibiltyCoverability(const vector<ClientType*> clients, const vector<DatacenterType*> datacenters)
 	{
 		for (auto c : clients)
-		{
-			//c->eligibleDatacenterList.clear();
+		{			
 			c->eligibleDatacenters.clear();
 		}
 
 		for (auto d : datacenters)
-		{
-			//d->coverableClientList.clear();
+		{			
 			d->coverableClients.clear();
 		}
 	}
 
-	void ResetAssignment(const vector<ClientType*> &clients, const vector<DatacenterType*> &datacenters)
+	void ResetAssignment(const vector<ClientType*> clients, const vector<DatacenterType*> datacenters)
 	{
 		for (auto c : clients)
 		{
@@ -26,7 +24,6 @@ namespace ServerAllocationProblem
 
 		for (auto d : datacenters)
 		{
-			//d->assignedClientList.clear();
 			d->assignedClients.clear();
 		}
 	}
@@ -867,8 +864,8 @@ namespace ServerAllocationProblem
 		{
 			for (int i = 0; i < STRATEGY_COUNT; i++)
 			{
-				computationMeanFile << GetMeanValue(computationStrategyCapacitySession.at(i).at(j)) << " ";
-				computationStdFile << GetStdValue(computationStrategyCapacitySession.at(i).at(j)) << " ";
+				computationMeanFile << GetMeanValue(computationStrategyCapacitySession.at(i).at(j)) << ",";
+				computationStdFile << GetStdValue(computationStrategyCapacitySession.at(i).at(j)) << ",";
 			}
 			computationMeanFile << "\n";
 			computationStdFile << "\n";
@@ -991,10 +988,7 @@ namespace ServerAllocationProblem
 
 		for (auto client : sessionClients) // choose a dc for each client
 		{			
-			vector<DatacenterType*> copyEligibleDatacenters(client->eligibleDatacenters);
-			std::random_shuffle(copyEligibleDatacenters.begin(), copyEligibleDatacenters.end());
-			client->assignedDatacenterID = copyEligibleDatacenters.front()->id;		
-			
+			client->assignedDatacenterID = client->eligibleDatacenters.at(GenerateRandomIndex(client->eligibleDatacenters.size()))->id;
 			allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 		}
 

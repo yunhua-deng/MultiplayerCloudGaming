@@ -4,13 +4,12 @@ namespace MatchmakingProblem
 {
 	void MatchmakingProblemBase::Initialize(const string given_dataDirectory)
 	{
-		/*string ClientDatacenterLatencyFile = "dc_to_pl_rtt.csv";
+		string ClientDatacenterLatencyFile = "dc_to_pl_rtt.csv";
 		string InterDatacenterLatencyFile = "dc_to_dc_rtt.csv";
-		string BandwidthServerPricingFile = "dc_pricing_bandwidth_server.csv";*/
-		
-		string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv";
+		string BandwidthServerPricingFile = "dc_pricing_bandwidth_server.csv";		
+		/*string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv";
 		string InterDatacenterLatencyFile = "ping_to_dc_median_matrix.csv";
-		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";
+		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";*/
 		
 		this->dataDirectory = given_dataDirectory;
 		this->globalClientList.clear();
@@ -105,34 +104,18 @@ namespace MatchmakingProblem
 		}
 		//printf("%d datacenters loaded\n", int(globalDatacenterList.size()));
 	}
-
-	DatacenterType* GetClientNearestDC(ClientType & client)
-	{
-		if (client.eligibleDatacenters.empty())
-			return nullptr;
-		
-		auto nearest = client.eligibleDatacenters.front();
-		for (auto& edc : client.eligibleDatacenters)
-		{
-			if (client.delayToDatacenter.at(edc->id) < client.delayToDatacenter.at(nearest->id))
-			{
-				nearest = edc;
-			}
-		}
-		return nearest;
-	}
-
+	
 	void MaximumMatchingProblem::Simulate(const int clientCount, const int latencyThreshold, const int simulationCount, const int sessionSize)
 	{
 		/*initialize global stuff*/
 		Initialize();
 
 		/*random number seed*/
-		std::srand(2);
+		std::srand(0);
 		//std::srand(time(NULL));
 
 		/*stuff to record performance*/
-		vector<double> successRate;
+		vector<double> groupingRate;
 
 		/*run simulation round by round*/
 		for (int round = 1; round <= simulationCount; round++)
@@ -171,50 +154,112 @@ namespace MatchmakingProblem
 						client.eligibleDatacenters.push_back(&dc);
 					}
 				}
-
 				if (!client.eligibleDatacenters.empty())
 				{
 					totalEligibleClients++;
 				}
 			}
-			if (totalEligibleClients < 1)
+			if (totalEligibleClients < sessionSize)
 			{
-				printf("infeasible candidateClients, so redo this round\n");
+				printf("totalEligibleClients < sessionSize, ignore this round and generate another candidateDatacenters\n");
 				round--;
 				continue;
 			}
 
-			/*nearest assignment*/
-			NearestAssignmentGrouping();			
+			/*grouping algorithm*/
+			if ("random" == groupingAlgorithm)
+				RandomAssignmentGrouping();
+			else if ("nearest" == groupingAlgorithm)
+				NearestAssignmentGrouping();
+			else
+				printf("invalid grouping algoritm name!\n");
+				
+			/*record the result of this round*/
 			double totalGroupedClients = 0;			
 			for (auto& dc : candidateDatacenters)
 			{				
 				totalGroupedClients += std::floor((double)dc.assignedClients.size() / sessionSize) * sessionSize;
-				successRate.push_back(totalGroupedClients / totalEligibleClients);
 			}			
-			//printf("successRate = %.2f\n", totalGroupedClients / totalEligibleClients);
+			groupingRate.push_back(totalGroupedClients / totalEligibleClients);
 		}
 		
-		printf("clientCount = %d | ", clientCount);
-		printf("average successRate = %.2f\n", GetMeanValue(successRate));
+		/*print out the result*/
+		printf("clientCount=%d\t", clientCount);
+		printf(groupingAlgorithm.c_str());
+		printf("\tgroupingRate=%.2f\n", GetMeanValue(groupingRate));
 	}
 
-	void MaximumMatchingProblem::NearestAssignmentGrouping()
-	{		
-		/*reset each dc's assignedClients*/
+	void MaximumMatchingProblem::RandomAssignmentGrouping()
+	{
+		/*reset assignedClients*/
 		for (auto& dc : candidateDatacenters)
 		{
 			dc.assignedClients.clear();
 		}
 
+		/*reset assignedDatacenter*/
+		for (auto& client : candidateClients)
+		{
+			client.assignedDatacenter = nullptr;
+		}
+
 		/*determine each dc's assignedClients*/
 		for (auto& client : candidateClients)
-		{			
-			client.assignedDatacenter = GetClientNearestDC(client);
+		{
+			if (!client.eligibleDatacenters.empty())
+			{
+				client.assignedDatacenter = client.eligibleDatacenters.at(GenerateRandomIndex(client.eligibleDatacenters.size()));
+			}
+
 			if (client.assignedDatacenter != nullptr)
 			{
 				client.assignedDatacenter->assignedClients.push_back(&client);
 			}
 		}
+	}
+
+	void MaximumMatchingProblem::NearestAssignmentGrouping()
+	{		
+		/*reset assignedClients*/
+		for (auto& dc : candidateDatacenters)
+		{
+			dc.assignedClients.clear();
+		}
+
+		/*reset assignedDatacenter*/
+		for (auto& client : candidateClients)
+		{
+			client.assignedDatacenter = nullptr;
+		}
+
+		/*determine each dc's assignedClients*/
+		for (auto& client : candidateClients)
+		{			
+			if (!client.eligibleDatacenters.empty())
+			{
+				client.assignedDatacenter = GetClientNearestDC(client);
+			}
+
+			if (client.assignedDatacenter != nullptr)
+			{
+				client.assignedDatacenter->assignedClients.push_back(&client);
+			}
+		}
+	}
+
+	DatacenterType* MatchmakingProblemBase::GetClientNearestDC(ClientType & client)
+	{
+		if (client.eligibleDatacenters.empty())
+			return nullptr;
+
+		auto nearest = client.eligibleDatacenters.front();
+		for (auto& edc : client.eligibleDatacenters)
+		{
+			if (client.delayToDatacenter.at(edc->id) < client.delayToDatacenter.at(nearest->id))
+			{
+				nearest = edc;
+			}
+		}
+		return nearest;
 	}
 }

@@ -44,17 +44,18 @@ namespace MatchmakingProblem
 		vector<ClientType> globalClientList; // read from input
 		vector<DatacenterType> globalDatacenterList; // read from input
 		void Initialize(const string givenDataDirectory = ".\\Data\\");
+		DatacenterType* GetClientNearestDC(ClientType & client);
 	};
 
 	class MaximumMatchingProblem : public MatchmakingProblemBase
 	{
 	public:
+		string groupingAlgorithm;
 		void Simulate(const int clientCount = 100, const int latencyThreshold = 100, const int simulationCount = 100, const int sessionSize = 10);
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;
+		void RandomAssignmentGrouping();
 		void NearestAssignmentGrouping();
-	};
-
-	DatacenterType* GetClientNearestDC(ClientType & client);
+	};	
 }

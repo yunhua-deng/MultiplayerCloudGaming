@@ -46,8 +46,8 @@ namespace ServerAllocationProblem
 	void SimulateBasicProblem(double, double, double, double SESSION_COUNT = 1000);
 	void SimulateGeneralProblem(double, double, double, double SESSION_COUNT = 1000);
 
-	void ResetEligibiltyCoverability(const vector<ClientType*> &, const vector<DatacenterType*> &);
-	void ResetAssignment(const vector<ClientType*> &, const vector<DatacenterType*> &);
+	void ResetEligibiltyCoverability(vector<ClientType*>, vector<DatacenterType*>);
+	void ResetAssignment(vector<ClientType*>, vector<DatacenterType*> &);
 
 	// matchmaking for basic problem
 	// result: the datacenter for hosting the G-server, and a list of clients to be involved
