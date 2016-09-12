@@ -19,17 +19,21 @@ int main(int argc, char *argv[])
 	}*/
 
 	/*ServerAllocationProblem*/
-	/*ServerAllocationProblem::SimulateBasicProblem(75, 50, 10);
+	ServerAllocationProblem::SimulateBasicProblem(75, 50, 10);
 	ServerAllocationProblem::SimulateBasicProblem(75, 50, 50);
 	ServerAllocationProblem::SimulateBasicProblem(150, 100, 10);
-	ServerAllocationProblem::SimulateBasicProblem(150, 100, 50);*/
+	ServerAllocationProblem::SimulateBasicProblem(150, 100, 50);
+	ServerAllocationProblem::SimulateGeneralProblem(75, 50, 10);
+	ServerAllocationProblem::SimulateGeneralProblem(75, 50, 50);
+	ServerAllocationProblem::SimulateGeneralProblem(150, 100, 10);
+	ServerAllocationProblem::SimulateGeneralProblem(150, 100, 50);
 
 	/*MatchmakingProblem*/
-	auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
-	for (int clientCount : { 100, 200, 400, 800, 1600, 6400 })
-	{
-		simulator.Simulate(clientCount);
-	}
+	//auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
+	//for (int clientCount : { 100, 200, 400, 800, 1600, 6400 })
+	//{
+	//	simulator.Simulate(clientCount);
+	//}
 
 	return 0;
 }
