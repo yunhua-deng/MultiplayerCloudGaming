@@ -39,11 +39,12 @@ namespace MatchmakingProblem
 	
 	class MatchmakingProblemBase
 	{			
+	public:
+		void Initialize(const string givenDataDirectory = ".\\Data\\");
 	protected:		
 		string dataDirectory; // root path for input and output
 		vector<ClientType> globalClientList; // read from input
-		vector<DatacenterType> globalDatacenterList; // read from input
-		void Initialize(const string givenDataDirectory = ".\\Data\\");
+		vector<DatacenterType> globalDatacenterList; // read from input		
 		DatacenterType* GetClientNearestDC(ClientType & client);
 	};
 
@@ -51,7 +52,7 @@ namespace MatchmakingProblem
 	{
 	public:
 		string groupingAlgorithm;
-		void Simulate(const int clientCount = 100, const int latencyThreshold = 100, const int simulationCount = 100, const int sessionSize = 10);
+		void Simulate(const int clientCount = 100, const int latencyThreshold = 100, const int simulationCount = 1000, const int sessionSize = 10);
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;

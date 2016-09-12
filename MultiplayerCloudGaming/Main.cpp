@@ -30,11 +30,12 @@ int main(int argc, char *argv[])
 
 	/*MatchmakingProblem*/
 	auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
-	for (int clientCount = 20; clientCount <= 400; clientCount += 20)
-	{		
-		for (string algName : { "random", "nearest" })
-		{			
-			simulator.groupingAlgorithm = algName;
+	simulator.Initialize();	
+	for (string algName : { "random", "nearest" })
+	{
+		simulator.groupingAlgorithm = algName;
+		for (int clientCount = 20; clientCount <= 300; clientCount += 20)
+		{
 			simulator.Simulate(clientCount);
 		}
 	}
