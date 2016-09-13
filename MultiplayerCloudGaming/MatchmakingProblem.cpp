@@ -107,9 +107,9 @@ namespace MatchmakingProblem
 	
 	void MaximumMatchingProblem::Simulate(const int clientCount, const int latencyThreshold, const int simulationCount, const int sessionSize)
 	{
-		/*initialize global stuff*/
-		Initialize();		
-
+		/*fix the random number seed*/
+		std::srand(1);
+		
 		/*stuff to record performance*/
 		vector<double> groupingRate;
 

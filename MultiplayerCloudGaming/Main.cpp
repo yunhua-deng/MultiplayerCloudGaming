@@ -19,25 +19,26 @@ int main(int argc, char *argv[])
 	}*/
 
 	/*ServerAllocationProblem*/
-	ServerAllocationProblem::SimulateBasicProblem(75, 50, 10);
+	/*ServerAllocationProblem::SimulateBasicProblem(75, 50, 10);
 	ServerAllocationProblem::SimulateBasicProblem(75, 50, 50);
 	ServerAllocationProblem::SimulateBasicProblem(150, 100, 10);
 	ServerAllocationProblem::SimulateBasicProblem(150, 100, 50);
 	ServerAllocationProblem::SimulateGeneralProblem(75, 50, 10);
 	ServerAllocationProblem::SimulateGeneralProblem(75, 50, 50);
 	ServerAllocationProblem::SimulateGeneralProblem(150, 100, 10);
-	ServerAllocationProblem::SimulateGeneralProblem(150, 100, 50);
+	ServerAllocationProblem::SimulateGeneralProblem(150, 100, 50);*/
 
 	/*MatchmakingProblem*/
-	/*auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
-	for (int clientCount = 20; clientCount <= 400; clientCount += 20)
-	{		
-		for (string algName : { "random", "nearest" })
-		{			
-			simulator.groupingAlgorithm = algName;
+	auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
+	simulator.Initialize();	
+	for (string algName : { "random", "nearest" })
+	{
+		simulator.groupingAlgorithm = algName;
+		for (int clientCount = 20; clientCount <= 300; clientCount += 20)
+		{
 			simulator.Simulate(clientCount);
 		}
-	}*/
+	}
 
 	return 0;
 }
