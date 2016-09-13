@@ -28,17 +28,24 @@ int main(int argc, char *argv[])
 	ServerAllocationProblem::SimulateGeneralProblem(150, 100, 10);
 	ServerAllocationProblem::SimulateGeneralProblem(150, 100, 50);*/
 
-	/*MatchmakingProblem*/
+	/*MatchmakingProblem*/	
 	auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
-	simulator.Initialize();	
-	for (string algName : { "random", "nearest" })
+	simulator.Initialize();
+	_mkdir(simulator.outputDirectory.c_str());
+	for (string algName : { "nearest", "random" })
 	{
-		simulator.groupingAlgorithm = algName;
-		for (int clientCount = 20; clientCount <= 300; clientCount += 20)
+		for (int latenchThreshold : { 25, 50, 100 })
 		{
-			simulator.Simulate(clientCount);
+			simulator.groupingAlgorithm = algName;
+			simulator.outFile = ofstream(simulator.outputDirectory + simulator.groupingAlgorithm + "_" + std::to_string(latenchThreshold) + ".csv");
+			srand(0); // to ensure the random numbers genereted for each algorithm is the same
+			for (int clientCount = 20; clientCount <= 400; clientCount += 20)
+			{
+				simulator.Simulate(clientCount, latenchThreshold);
+			}
+			simulator.outFile.close();
 		}
 	}
-
+	
 	return 0;
 }

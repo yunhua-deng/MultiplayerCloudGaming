@@ -2,16 +2,15 @@
 
 namespace MatchmakingProblem
 {
-	void MatchmakingProblemBase::Initialize(const string given_dataDirectory)
+	void MatchmakingProblemBase::Initialize()
 	{
 		string ClientDatacenterLatencyFile = "dc_to_pl_rtt.csv";
 		string InterDatacenterLatencyFile = "dc_to_dc_rtt.csv";
 		string BandwidthServerPricingFile = "dc_pricing_bandwidth_server.csv";		
 		/*string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv";
 		string InterDatacenterLatencyFile = "ping_to_dc_median_matrix.csv";
-		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";*/
+		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";*/		
 		
-		this->dataDirectory = given_dataDirectory;
 		this->globalClientList.clear();
 		this->globalDatacenterList.clear();
 
@@ -107,17 +106,16 @@ namespace MatchmakingProblem
 	
 	void MaximumMatchingProblem::Simulate(const int clientCount, const int latencyThreshold, const int simulationCount, const int sessionSize)
 	{
-		/*fix the random number seed*/
-		std::srand(1);
-		
 		/*stuff to record performance*/
-		vector<double> groupingRate;
+		vector<double> eligibleRate;
+		vector<double> groupedRate;
 
 		/*run simulation round by round*/
 		for (int round = 1; round <= simulationCount; round++)
 		{	
 			/*generate a set of random candidateClients according to the clientCount parameters*/
 			auto globalClientListCopy = globalClientList; // avoid modifying the original globalClientList	 
+			candidateClients.clear();
 			if (clientCount <= globalClientListCopy.size())
 			{
 				random_shuffle(globalClientListCopy.begin(), globalClientListCopy.end());
@@ -130,7 +128,14 @@ namespace MatchmakingProblem
 					random_shuffle(globalClientListCopy.begin(), globalClientListCopy.end());
 					for (auto& client : globalClientListCopy)
 					{
-						candidateClients.push_back(client);
+						if (candidateClients.size() < clientCount)
+						{
+							candidateClients.push_back(client);
+						}
+						else
+						{
+							break;
+						}
 					}
 				}
 			}
@@ -161,12 +166,13 @@ namespace MatchmakingProblem
 				round--;
 				continue;
 			}
+			eligibleRate.push_back(totalEligibleClients / clientCount);
 
 			/*grouping algorithm*/
-			if ("random" == groupingAlgorithm)
-				RandomAssignmentGrouping();
-			else if ("nearest" == groupingAlgorithm)
+			if ("nearest" == groupingAlgorithm)
 				NearestAssignmentGrouping();
+			else if ("random" == groupingAlgorithm)
+				RandomAssignmentGrouping();			
 			else
 				printf("invalid grouping algoritm name!\n");
 				
@@ -176,13 +182,12 @@ namespace MatchmakingProblem
 			{				
 				totalGroupedClients += std::floor((double)dc.assignedClients.size() / sessionSize) * sessionSize;
 			}			
-			groupingRate.push_back(totalGroupedClients / totalEligibleClients);
+			groupedRate.push_back(totalGroupedClients / clientCount);
 		}
 		
-		/*print out the result*/
-		printf("clientCount=%d\t", clientCount);
-		printf(groupingAlgorithm.c_str());
-		printf("\tgroupingRate=%.2f\n", GetMeanValue(groupingRate));
+		/*dump to disk*/
+		outFile << clientCount << "," << GetMeanValue(eligibleRate) << "," << GetMeanValue(groupedRate) << "\n";
+		printf("%d,%.2f,%.2f\n", clientCount, GetMeanValue(eligibleRate), GetMeanValue(groupedRate));
 	}
 
 	void MaximumMatchingProblem::RandomAssignmentGrouping()

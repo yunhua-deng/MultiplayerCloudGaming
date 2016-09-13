@@ -1471,11 +1471,8 @@ namespace ServerAllocationProblem
 				if (!dc->unassignedCoverableClients.empty()) { candidateDatacenters.push_back(dc); }
 			}
 
-			// all clients are assigned, so terminate the iteration
-			if (candidateDatacenters.empty())
-			{
-				break;
-			}
+			// all clients are assigned, so terminate the loop
+			if (candidateDatacenters.empty()) {	break; }
 
 			// compute the average cost per client if opening a server in each dc		
 			for (auto dc : candidateDatacenters)
@@ -1510,7 +1507,7 @@ namespace ServerAllocationProblem
 				}
 			}
 
-			//assign at most (serverCapacity) unassignedCoverable clients to the dc with the lowest averageCostPerClient			
+			// assign at most (serverCapacity) unassignedCoverable clients to the dc with the lowest averageCostPerClient
 			auto nextDC = candidateDatacenters.front();
 			for (auto cdc : candidateDatacenters)
 			{
@@ -1518,9 +1515,8 @@ namespace ServerAllocationProblem
 				{
 					nextDC = cdc;
 				}
-			}
-			int unassignedCoverableClientCountNextDC = (int)nextDC->unassignedCoverableClients.size();
-			int numberOfClientsToBeAssigned = (unassignedCoverableClientCountNextDC <= serverCapacity) ? unassignedCoverableClientCountNextDC : (int)serverCapacity;
+			}			
+			int numberOfClientsToBeAssigned = ((int)nextDC->unassignedCoverableClients.size() <= serverCapacity) ? (int)nextDC->unassignedCoverableClients.size() : (int)serverCapacity;
 			for (int i = 0; i < numberOfClientsToBeAssigned; i++)
 			{
 				nextDC->unassignedCoverableClients.at(i)->assignedDatacenterID = nextDC->id;

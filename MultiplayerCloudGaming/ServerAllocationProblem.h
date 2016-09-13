@@ -147,5 +147,5 @@ namespace ServerAllocationProblem
 
 	// Lowest-Average-Cost-Assignment (LAC)
 	// overloaded for general problem
-	tuple<double, double, double, double, double> Alg_LAC(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double, bool includingGServerCost = false);
+	tuple<double, double, double, double, double> Alg_LAC(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double, bool includingGServerCost = false);		
 }

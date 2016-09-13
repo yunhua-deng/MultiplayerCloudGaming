@@ -40,9 +40,9 @@ namespace MatchmakingProblem
 	class MatchmakingProblemBase
 	{			
 	public:
-		void Initialize(const string givenDataDirectory = ".\\Data\\");
-	protected:		
-		string dataDirectory; // root path for input and output
+		string dataDirectory = ".\\Data\\"; // root path for input and output
+		void Initialize();
+	protected:
 		vector<ClientType> globalClientList; // read from input
 		vector<DatacenterType> globalDatacenterList; // read from input		
 		DatacenterType* GetClientNearestDC(ClientType & client);
@@ -50,13 +50,15 @@ namespace MatchmakingProblem
 
 	class MaximumMatchingProblem : public MatchmakingProblemBase
 	{
-	public:
+	public:		
+		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";
 		string groupingAlgorithm;
+		ofstream outFile;
 		void Simulate(const int clientCount = 100, const int latencyThreshold = 100, const int simulationCount = 1000, const int sessionSize = 10);
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;
 		void RandomAssignmentGrouping();
-		void NearestAssignmentGrouping();
-	};	
+		void NearestAssignmentGrouping();		
+	};
 }
