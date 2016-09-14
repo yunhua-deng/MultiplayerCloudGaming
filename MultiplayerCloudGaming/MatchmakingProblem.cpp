@@ -4,12 +4,12 @@ namespace MatchmakingProblem
 {
 	void MatchmakingProblemBase::Initialize()
 	{
-		string ClientDatacenterLatencyFile = "dc_to_pl_rtt.csv";
+		/*string ClientDatacenterLatencyFile = "dc_to_pl_rtt.csv";
 		string InterDatacenterLatencyFile = "dc_to_dc_rtt.csv";
-		string BandwidthServerPricingFile = "dc_pricing_bandwidth_server.csv";		
-		/*string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv";
+		string BandwidthServerPricingFile = "dc_pricing_bandwidth_server.csv";*/		
+		string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv";
 		string InterDatacenterLatencyFile = "ping_to_dc_median_matrix.csv";
-		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";*/		
+		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";		
 		
 		this->globalClientList.clear();
 		this->globalDatacenterList.clear();
@@ -104,17 +104,17 @@ namespace MatchmakingProblem
 		//printf("%d datacenters loaded\n", int(globalDatacenterList.size()));
 	}
 	
-	void MaximumMatchingProblem::Simulate(const int clientCount, const int latencyThreshold, const int simulationCount, const int sessionSize)
-	{
+	void MaximumMatchingProblem::Simulate(const string algToRun, const int clientCount, const int latencyThreshold, const int simulationCount, const int sessionSize)
+	{		
 		/*stuff to record performance*/
 		vector<double> eligibleRate;
 		vector<double> groupedRate;
 
 		/*run simulation round by round*/
+		auto globalClientListCopy = globalClientList; // prevent the original globalClientList from being modifed by random_shuffle
 		for (int round = 1; round <= simulationCount; round++)
 		{	
-			/*generate a set of random candidateClients according to the clientCount parameters*/
-			auto globalClientListCopy = globalClientList; // avoid modifying the original globalClientList	 
+			/*generate a set of random candidateClients according to the clientCount parameters*/				 
 			candidateClients.clear();
 			if (clientCount <= globalClientListCopy.size())
 			{
@@ -169,9 +169,9 @@ namespace MatchmakingProblem
 			eligibleRate.push_back(totalEligibleClients / clientCount);
 
 			/*grouping algorithm*/
-			if ("nearest" == groupingAlgorithm)
+			if ("nearest" == algToRun)
 				NearestAssignmentGrouping();
-			else if ("random" == groupingAlgorithm)
+			else if ("random" == algToRun)
 				RandomAssignmentGrouping();			
 			else
 				printf("invalid grouping algoritm name!\n");

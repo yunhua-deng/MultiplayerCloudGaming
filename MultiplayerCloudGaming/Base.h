@@ -15,6 +15,7 @@
 #include <random>
 #include <cmath>
 #include <direct.h>
+#include <thread>
 
 using namespace std;
 

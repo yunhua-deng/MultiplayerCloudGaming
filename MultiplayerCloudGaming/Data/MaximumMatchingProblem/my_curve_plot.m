@@ -17,4 +17,3 @@ for i = 1:3
     title(sprintf('one-way delay threshold: %d msec', L_G(i)));
     pbaspect([2 1 1]);
 end
-savfig('nearest_vs_random');

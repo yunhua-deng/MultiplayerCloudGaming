@@ -51,10 +51,9 @@ namespace MatchmakingProblem
 	class MaximumMatchingProblem : public MatchmakingProblemBase
 	{
 	public:		
-		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";
-		string groupingAlgorithm;
+		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";		
 		ofstream outFile;
-		void Simulate(const int clientCount = 100, const int latencyThreshold = 100, const int simulationCount = 1000, const int sessionSize = 10);
+		void Simulate(const string algToRun, const int clientCount = 100, const int latencyThreshold = 100, const int simulationCount = 100, const int sessionSize = 10);
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;
