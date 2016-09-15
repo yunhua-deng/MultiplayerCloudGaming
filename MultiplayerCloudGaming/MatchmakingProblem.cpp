@@ -3,11 +3,9 @@
 namespace MatchmakingProblem
 {
 	void MatchmakingProblemBase::Initialize()
-	{
-		/*string ClientDatacenterLatencyFile = "dc_to_pl_rtt.csv";
-		string InterDatacenterLatencyFile = "dc_to_dc_rtt.csv";
-		string BandwidthServerPricingFile = "dc_pricing_bandwidth_server.csv";*/		
-		string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv";
+	{				
+		//string ClientDatacenterLatencyFile = "ping_to_pl_median_matrix.csv"; // small dataset
+		string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv"; // large dataset
 		string InterDatacenterLatencyFile = "ping_to_dc_median_matrix.csv";
 		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";		
 		
@@ -104,7 +102,7 @@ namespace MatchmakingProblem
 		//printf("%d datacenters loaded\n", int(globalDatacenterList.size()));
 	}
 	
-	void MaximumMatchingProblem::Simulate(const string algToRun, const int clientCount, const int latencyThreshold, const int simulationCount, const int sessionSize)
+	void MaximumMatchingProblem::Simulate(const string algToRun, const int clientCount, const int latencyThreshold, const int sessionSize, const int simulationCount)
 	{		
 		srand(0);
 		
@@ -112,18 +110,17 @@ namespace MatchmakingProblem
 		vector<double> eligibleRate;
 		vector<double> groupedRate;
 
-		/*run simulation round by round*/
-		auto globalClientListCopy = globalClientList; // prevent the original globalClientList from being modifed by random_shuffle
+		/*run simulation round by round*/		
 		for (int round = 1; round <= simulationCount; round++)
 		{	
-			/*generate candidateClients*/
+			/*generate candidateClients (copy from globalClientList)*/
 			candidateClients.clear();
 			while (candidateClients.size() < clientCount)
 			{
-				candidateClients.push_back(globalClientListCopy.at(GenerateRandomIndex(globalClientListCopy.size())));
+				candidateClients.push_back(globalClientList.at(GenerateRandomIndex(globalClientList.size())));				
 			}
 
-			/*generate candidateDatacenters*/
+			/*generate candidateDatacenters (copy from globalDatacenterList)*/
 			candidateDatacenters= globalDatacenterList;
 
 			/*update eligible datacenters for clients and coverable clients for datacenters*/
@@ -155,8 +152,7 @@ namespace MatchmakingProblem
 			{
 				eligibleRate.push_back(totalEligibleClients / clientCount);
 			}
-
-			printf("round=%d\n", round);
+			//printf("round=%d\n", round);
 
 			/*grouping algorithm*/
 			if ("nearest" == algToRun)
@@ -165,6 +161,10 @@ namespace MatchmakingProblem
 				RandomAssignmentGrouping();
 			else if ("simple" == algToRun)
 				SimpleGreedyGrouping(sessionSize);
+			else if ("simple-sort-fewer" == algToRun)
+				SimpleGreedyGrouping(sessionSize, true);
+			else if ("simple-sort-more" == algToRun)
+				SimpleGreedyGrouping(sessionSize, true, true);
 			else
 				printf("invalid algoritm name!\n");
 				
@@ -240,7 +240,7 @@ namespace MatchmakingProblem
 		}
 	}
 
-	void MaximumMatchingProblem::SimpleGreedyGrouping(const int sessionSize)
+	void MaximumMatchingProblem::SimpleGreedyGrouping(const int sessionSize, const bool sortingClients, const bool sortingClientsByMoreEligibleDatacenters)
 	{
 		/*reset assignedClients*/
 		for (auto & dc : candidateDatacenters)
@@ -255,9 +255,15 @@ namespace MatchmakingProblem
 		}
 
 		/*sort coverableClients for each datacenter*/
-		for (auto & dc : candidateDatacenters)
+		if (sortingClients)
 		{
-			std::sort(dc.coverableClients.begin(), dc.coverableClients.end(), ClientComparatorByEligibleDatacenterSize);
+			for (auto & dc : candidateDatacenters)
+			{
+				if (sortingClientsByMoreEligibleDatacenters)
+					std::sort(dc.coverableClients.begin(), dc.coverableClients.end(), ClientComparatorByMoreEligibleDatacenters);
+				else 
+					std::sort(dc.coverableClients.begin(), dc.coverableClients.end(), ClientComparatorByFewerEligibleDatacenters);
+			}
 		}
 
 		/*simple datacenter-based hill-climbing greedy*/		
@@ -326,7 +332,12 @@ namespace MatchmakingProblem
 		return nearest;
 	}
 
-	bool ClientComparatorByEligibleDatacenterSize(const ClientType * a, const ClientType * b)
+	bool ClientComparatorByFewerEligibleDatacenters(const ClientType * a, const ClientType * b)
+	{
+		return (a->eligibleDatacenters.size() <= b->eligibleDatacenters.size());
+	}
+
+	bool ClientComparatorByMoreEligibleDatacenters(const ClientType * a, const ClientType * b)
 	{
 		return (a->eligibleDatacenters.size() >= b->eligibleDatacenters.size());
 	}

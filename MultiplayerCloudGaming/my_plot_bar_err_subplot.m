@@ -2,11 +2,8 @@
 L_G = [75 150];
 L_R = [50 100];
 size = [10 50];
-
-y_max = [5 2]; % for basic problem
-%y_max = [4 2]; % for general problem
-
-position = 0;
+y_max = [4 2];
+set(gcf, 'Position', get(0, 'Screensize'));
 for j = 1:2
    for i = 1:2       
        file_name = sprintf('%d_%d_%d_costTotalMean', L_G(i), L_R(i), size(j));
@@ -24,10 +21,9 @@ for j = 1:2
            data_std(2, 2:end);
            data_std(3, 2:end);
            data_std(4, 2:end)
-           ];
-       
-       position = position + 1;       
-       subplot(2, 2, position);
+           ];       
+             
+       subplot(2, 2, (j - 1) * 2 + i);
        bh = barwitherr(data_std, data_mean); % with standard deviation bars       
             
        bh(1).FaceColor = rgb('FloralWhite');
@@ -37,6 +33,7 @@ for j = 1:2
        bh(5).FaceColor = rgb('LightPink');
        bh(6).FaceColor = rgb('SandyBrown');
        bh(7).FaceColor = rgb('MediumPurple');
+       bh(8).FaceColor = rgb('DarkGray');
       
        set(gca, 'XTick', [1 2 3 4]);
        set(gca, 'XTickLabel', [2 4 6 8]);
@@ -45,8 +42,8 @@ for j = 1:2
        set(gca, 'fontsize', 14);
        xlabel('Server capacity: k', 'FontSize', 14);
        ylabel('Normalized cost', 'FontSize', 20);
-       lh = legend('RA', 'NA', 'LSP', 'LBP', 'LCP', 'LCW', 'HC', 'Orientation', 'horizontal', 'Location', 'best');
-       set(lh, 'FontSize', 14);       
+       lh = legend('RA', 'NA', 'LSP', 'LBP', 'LCP', 'LCW', 'HC', 'HC*', 'Orientation', 'horizontal', 'Location', 'best');
+       set(lh, 'FontSize', 12);       
        title(sprintf('(L_G = %d, L_R = %d); \t (|C| = %d)', L_G(i)*2, L_R(i)*2, size(j)));
        grid on;
     end 
@@ -56,11 +53,9 @@ end
 L_G = [75 150];
 L_R = [50 100];
 size = [10 50];
-
-y_max = [5 1]; % for basic problem
+y_max = [4 1]; % for basic problem
 %y_max = [4 1]; % for general problem
-
-position = 0;
+set(gcf, 'Position', get(0, 'Screensize'));
 for j = 1:2
    for i = 1:2              
        file_name = sprintf('%d_%d_%d_capacityWastageMean', L_G(i), L_R(i), size(j));
@@ -78,10 +73,9 @@ for j = 1:2
            data_std(2, 2:end);
            data_std(3, 2:end);
            data_std(4, 2:end)
-           ]; 
-  
-       position = position + 1;       
-       subplot(2, 2, position);
+           ];  
+        
+       subplot(2, 2, (j - 1) * 2 + i);
        bh = barwitherr(data_std, data_mean);
        
        bh(1).FaceColor = rgb('FloralWhite');
@@ -91,6 +85,7 @@ for j = 1:2
        bh(5).FaceColor = rgb('LightPink');
        bh(6).FaceColor = rgb('SandyBrown');
        bh(7).FaceColor = rgb('MediumPurple');
+       bh(8).FaceColor = rgb('DarkGray');
       
        set(gca, 'XTick', [1 2 3 4]);
        set(gca, 'XTickLabel', [2 4 6 8]);
@@ -99,8 +94,8 @@ for j = 1:2
        set(gca, 'fontsize', 14);
        xlabel('Server capacity: k', 'FontSize', 16);
        ylabel('Capacity wastage ratio', 'FontSize', 20); 
-       lh = legend('RA', 'NA', 'LSP', 'LBP', 'LCP', 'LCW', 'HC', 'Orientation', 'horizontal', 'Location', 'best');
-       set(lh, 'FontSize', 14); 
+       lh = legend('RA', 'NA', 'LSP', 'LBP', 'LCP', 'LCW', 'HC', 'HC*', 'Orientation', 'horizontal', 'Location', 'best');
+       set(lh, 'FontSize', 12); 
        title(sprintf('(L_G = %d, L_R = %d); \t (|C| = %d)', L_G(i)*2, L_R(i)*2, size(j)));
        grid on;
     end 

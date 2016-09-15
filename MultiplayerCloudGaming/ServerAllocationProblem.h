@@ -21,6 +21,7 @@ namespace ServerAllocationProblem
 			this->assignedDatacenterID = -1;
 		}
 	};
+	bool ClientComparatorByTrafficVolume(const ClientType * A, const ClientType * B);
 
 	struct DatacenterType
 	{
@@ -33,7 +34,7 @@ namespace ServerAllocationProblem
 		vector<ClientType*> assignedClients;
 		double openServerCount;
 		vector<ClientType*> unassignedCoverableClients; // to be used by some algorithms
-		double averageCostPerClient; // to be used by some algorithms
+		double amortizedCostPerClient; // to be used by some algorithms
 		DatacenterType(int givenID)
 		{
 			this->id = givenID;
@@ -147,5 +148,15 @@ namespace ServerAllocationProblem
 
 	// Lowest-Average-Cost-Assignment (LAC)
 	// overloaded for general problem
-	tuple<double, double, double, double, double> Alg_LAC(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double, bool includingGServerCost = false);		
+	tuple<double, double, double, double, double> Alg_LAC(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double, bool includingGServerCost = false);
+
+	// Lowest-Average-Cost-Sorted (LACS)
+	// the original LAC calculates the average bandwidth cost per client by considering all the unassigned clients in that dc
+	// while the LACS calculates the average bandwidth cost per client by considering only the at most top k unassigned clients according a ranking (less traffic to more traffic) where k is the server capacity
+	// for basic problem
+	tuple<double, double, double, double, double> Alg_LACS(const vector<ClientType*> &, const vector<DatacenterType*> &, double, int);
+
+	// Lowest-Average-Cost-Assignment (LACS)
+	// overloaded for general problem
+	tuple<double, double, double, double, double> Alg_LACS(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double, bool includingGServerCost = false);
 }

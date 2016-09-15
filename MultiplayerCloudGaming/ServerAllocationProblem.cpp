@@ -247,6 +247,12 @@ namespace ServerAllocationProblem
 		}
 		return (totalAssignedClientCount == (int)sessionClients.size());
 	}
+	
+	/*return true if the frist <= second*/
+	bool ClientComparatorByTrafficVolume(const ClientType * A, const ClientType * B)
+	{
+		return (A->chargedTrafficVolume <= B->chargedTrafficVolume);
+	}
 
 	bool Initialize(string dataDirectory, vector<ClientType*> &allClients, vector<DatacenterType*> &allDatacenters)
 	{
@@ -313,7 +319,7 @@ namespace ServerAllocationProblem
 		for (int i = 0; i < totalClientCount; i++)
 		{
 			ClientType* client = new ClientType(i);
-			client->chargedTrafficVolume = 2;
+			client->chargedTrafficVolume = 2; // could be revised somewhere before simulation for considering heterogeneity
 			for (int j = 0; j < totalDatacenterCount; j++)
 			{
 				client->delayToDatacenter[j] = ClientToDatacenterDelayMatrix.at(i).at(j);
@@ -470,7 +476,7 @@ namespace ServerAllocationProblem
 		vector<double> matchmakingTimeAtAllSessions;
 
 		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8 };
-		int STRATEGY_COUNT = 8;
+		int STRATEGY_COUNT = 9;
 
 		for (int sessionID = 1; sessionID <= SESSION_COUNT; sessionID++)
 		{
@@ -489,10 +495,10 @@ namespace ServerAllocationProblem
 				return;
 			}
 			GDatacenterIDAtAllSessions.push_back(GDatacenterID);
-			for (auto client : sessionClients)
-			{
-				eligibleRDatacenterCount.push_back((int)client->eligibleDatacenters.size());
-			}
+
+			for (auto client : sessionClients) { eligibleRDatacenterCount.push_back((int)client->eligibleDatacenters.size()); }
+
+			for (auto client : sessionClients) { client->chargedTrafficVolume = double(1 + (rand() % 5)); } // each client may have a trafficVolume in the range [1, 5]
 
 			printf("------------------------------------------------------------------------\n");
 			printf("delay bounds: (%d, %d) session size: %d session: %d\n", (int)DELAY_BOUND_TO_G, (int)DELAY_BOUND_TO_R, (int)SESSION_SIZE, sessionID);
@@ -535,6 +541,9 @@ namespace ServerAllocationProblem
 						break;
 					case 8:
 						outcome = Alg_LAC(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
+						break;
+					case 9:
+						outcome = Alg_LACS(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
 						break;
 					default:
 						outcome = tuple<double, double, double, double, double>(0, 0, 0, 0, 0);
@@ -670,8 +679,7 @@ namespace ServerAllocationProblem
 		}
 
 		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8 };
-
-		int STRATEGY_COUNT = 8;
+		int STRATEGY_COUNT = 9;
 
 		for (int sessionID = 1; sessionID <= SESSION_COUNT; sessionID++)
 		{
@@ -692,6 +700,8 @@ namespace ServerAllocationProblem
 				cin.get();
 				return;
 			}
+
+			for (auto client : sessionClients) { client->chargedTrafficVolume = double(1 + (rand() % 5)); } // each client may have a trafficVolume in the range [1, 5]
 
 			printf("------------------------------------------------------------------------\n");
 			printf("delay bounds: (%d, %d)   session size: %d   session: %d\n", (int)DELAY_BOUND_TO_G, (int)DELAY_BOUND_TO_R, (int)SESSION_SIZE, sessionID);
@@ -731,33 +741,36 @@ namespace ServerAllocationProblem
 						break;
 					case 6:
 						outcome = Alg_LCP(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
-						if (8 == serverCapacity)
+						/*if (8 == serverCapacity)
 						{
 							for (auto dc : allDatacenters)
 							{
 								serverCountPerDC4LCP[dc->id] += dc->openServerCount;
 							}
-						}
+						}*/
 						break;
 					case 7:
 						outcome = Alg_LCW(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
-						if (8 == serverCapacity)
+						/*if (8 == serverCapacity)
 						{
 							for (auto dc : allDatacenters)
 							{
 								serverCountPerDC4LCW[dc->id] += dc->openServerCount;
 							}
-						}
+						}*/
 						break;
 					case 8:
 						outcome = Alg_LAC(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
-						if (8 == serverCapacity)
+						/*if (8 == serverCapacity)
 						{
 							for (auto dc : allDatacenters)
 							{
 								serverCountPerDC4LAC[dc->id] += dc->openServerCount;
 							}
-						}
+						}*/
+						break;
+					case 9:
+						outcome = Alg_LACS(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 						break;
 					default:
 						outcome = tuple<double, double, double, double, double>(0, 0, 0, 0, 0);
@@ -1479,45 +1492,29 @@ namespace ServerAllocationProblem
 			{				
 				if (dc->unassignedCoverableClients.empty())
 				{
-					dc->averageCostPerClient = INT_MAX;
-				}
-				else if (dc->unassignedCoverableClients.size() <= serverCapacity)
-				{					
-					double avgServerCostPerClient = dc->priceServer / dc->unassignedCoverableClients.size();
-					double totalChargedTrafficVolume = 0;
-					for (auto client : dc->unassignedCoverableClients)
-					{
-						totalChargedTrafficVolume += client->chargedTrafficVolume;
-					}
-					double avgBandwidthCostPerClient = (dc->priceBandwidth * totalChargedTrafficVolume) / dc->unassignedCoverableClients.size();
-					
-					dc->averageCostPerClient = avgServerCostPerClient + avgBandwidthCostPerClient;
+					dc->amortizedCostPerClient = INT_MAX;
 				}
 				else
 				{
-					double avgServerCostPerClient = dc->priceServer / serverCapacity;
-					double totalChargedTrafficVolume = 0;
-					for (auto client : dc->unassignedCoverableClients)
-					{
-						totalChargedTrafficVolume += client->chargedTrafficVolume;
-					}
-					double avgBandwidthCostPerClient = (dc->priceBandwidth * totalChargedTrafficVolume) / dc->unassignedCoverableClients.size();
-
-					dc->averageCostPerClient = avgServerCostPerClient + avgBandwidthCostPerClient;
+					size_t addedClientCount = (dc->unassignedCoverableClients.size() <= serverCapacity) ? dc->unassignedCoverableClients.size() : (size_t)serverCapacity;
+					double totalBandwidthCostOfAllCandidateClients = 0;
+					for (auto client : dc->unassignedCoverableClients) { totalBandwidthCostOfAllCandidateClients += dc->priceBandwidth * client->chargedTrafficVolume; }
+					
+					dc->amortizedCostPerClient = dc->priceServer / addedClientCount + totalBandwidthCostOfAllCandidateClients / dc->unassignedCoverableClients.size();
 				}
 			}
 
-			// assign at most (serverCapacity) unassignedCoverable clients to the dc with the lowest averageCostPerClient
+			// assign at most (serverCapacity) unassignedCoverable clients to the dc with the lowest amortizedCostPerClient
 			auto nextDC = candidateDatacenters.front();
 			for (auto cdc : candidateDatacenters)
 			{
-				if (cdc->averageCostPerClient < nextDC->averageCostPerClient)
+				if (cdc->amortizedCostPerClient < nextDC->amortizedCostPerClient)
 				{
 					nextDC = cdc;
 				}
-			}			
-			int numberOfClientsToBeAssigned = ((int)nextDC->unassignedCoverableClients.size() <= serverCapacity) ? (int)nextDC->unassignedCoverableClients.size() : (int)serverCapacity;
-			for (int i = 0; i < numberOfClientsToBeAssigned; i++)
+			}
+			int numberOfClientsToAssign = ((int)nextDC->unassignedCoverableClients.size() <= serverCapacity) ? (int)nextDC->unassignedCoverableClients.size() : (int)serverCapacity;
+			for (size_t i = 0; i < numberOfClientsToAssign; i++)
 			{
 				nextDC->unassignedCoverableClients.at(i)->assignedDatacenterID = nextDC->id;
 				nextDC->assignedClients.push_back(nextDC->unassignedCoverableClients.at(i));
@@ -1549,6 +1546,126 @@ namespace ServerAllocationProblem
 		{
 			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
 			auto tempOutcome = Alg_LAC(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
+			double tempTotalCost = get<0>(tempOutcome);
+
+			map<int, double> tempServerCountPerDC; // newly added
+			for (auto dc : allDatacenters) // newly added
+			{
+				tempServerCountPerDC[dc->id] = dc->openServerCount;
+			}
+			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
+			if (tempTotalCost < totalCost) // choose the smaller cost
+			{
+				totalCost = tempTotalCost;
+				finalOutcome = tempOutcome;
+				tempFinalGDatacenter = GDatacenter->id;
+				finalServerCountPerDC = tempServerCountPerDC; // newly added
+			}
+		}
+
+		finalGDatacenter = tempFinalGDatacenter;
+
+		for (auto dc : allDatacenters) // newly added
+		{
+			dc->openServerCount = finalServerCountPerDC[dc->id];
+		}
+
+		return finalOutcome;
+	}
+
+	tuple<double, double, double, double, double> Alg_LACS(
+		const vector<ClientType*> &sessionClients,
+		const vector<DatacenterType*> &allDatacenters,
+		double serverCapacity,
+		int GDatacenterID)
+	{
+
+		if (serverCapacity < 2)	return Alg_LCP(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
+
+		ResetAssignment(sessionClients, allDatacenters);
+
+		while (true)
+		{
+			// update for the new iteration
+			vector<DatacenterType*> candidateDatacenters;
+			candidateDatacenters.clear();
+			for (auto dc : allDatacenters)
+			{
+				dc->unassignedCoverableClients.clear();
+
+				for (auto client : dc->coverableClients)
+				{
+					if (client->assignedDatacenterID < 0) { dc->unassignedCoverableClients.push_back(client); }
+				}
+
+				if (!dc->unassignedCoverableClients.empty()) { candidateDatacenters.push_back(dc); }
+			}
+
+			// no unassigned clients at all, so terminate the loop
+			if (candidateDatacenters.empty()) { break; }
+
+			// compute the average cost per client if opening a server in each cdc
+			for (auto cdc : candidateDatacenters)
+			{				
+				// calculate the amortizedCostPerClient based on the unassignedCoverableClients
+				if (cdc->unassignedCoverableClients.empty())
+				{
+					cdc->amortizedCostPerClient = INT_MAX; // so that we will never select this cdc to open the new server
+				}
+				else
+				{
+					// at first, sort the unassignedCoverableClients (from less traffic to more traffic)
+					sort(cdc->unassignedCoverableClients.begin(), cdc->unassignedCoverableClients.end(), ClientComparatorByTrafficVolume);
+					
+					// the number of newly added clients if openning a new server in cdc
+					size_t addedClientCount = (cdc->unassignedCoverableClients.size() <= serverCapacity) ? cdc->unassignedCoverableClients.size() : (size_t)serverCapacity;
+					double totalBandwidthCostOfAddedClients = 0;
+					for (size_t i = 0; i < addedClientCount; i++) { totalBandwidthCostOfAddedClients += cdc->priceBandwidth * cdc->unassignedCoverableClients.at(i)->chargedTrafficVolume; }
+					
+					cdc->amortizedCostPerClient = (cdc->priceServer + totalBandwidthCostOfAddedClients) / addedClientCount;
+				}				
+			}
+
+			// assign at most (serverCapacity) unassignedCoverable clients to the dc with the lowest amortizedCostPerClient
+			auto nextDC = candidateDatacenters.front();
+			for (auto cdc : candidateDatacenters)
+			{
+				if (cdc->amortizedCostPerClient < nextDC->amortizedCostPerClient)
+				{
+					nextDC = cdc;
+				}
+			}
+			int numberOfClientsToAssign = ((int)nextDC->unassignedCoverableClients.size() <= serverCapacity) ? (int)nextDC->unassignedCoverableClients.size() : (int)serverCapacity;
+			for (size_t i = 0; i < numberOfClientsToAssign; i++)
+			{
+				nextDC->unassignedCoverableClients.at(i)->assignedDatacenterID = nextDC->id;
+				nextDC->assignedClients.push_back(nextDC->unassignedCoverableClients.at(i));
+			}
+		}
+
+		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
+	}
+
+	tuple<double, double, double, double, double> Alg_LACS(
+		vector<DatacenterType*> eligibleGDatacenters,
+		int &finalGDatacenter,
+		const vector<ClientType*> &sessionClients,
+		const vector<DatacenterType*> &allDatacenters,
+		double DELAY_BOUND_TO_G,
+		double DELAY_BOUND_TO_R,
+		double serverCapacity,
+		bool includingGServerCost)
+	{
+		tuple<double, double, double, double, double> finalOutcome;
+		double totalCost = INT_MAX;
+		int tempFinalGDatacenter = eligibleGDatacenters.front()->id;
+
+		map<int, double> finalServerCountPerDC; // newly added
+
+		for (auto GDatacenter : eligibleGDatacenters)
+		{
+			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
+			auto tempOutcome = Alg_LACS(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 			double tempTotalCost = get<0>(tempOutcome);
 
 			map<int, double> tempServerCountPerDC; // newly added

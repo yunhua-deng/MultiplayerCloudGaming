@@ -20,7 +20,8 @@ namespace MatchmakingProblem
 			this->id = givenID;
 		}
 	};
-	bool ClientComparatorByEligibleDatacenterSize(const ClientType * a, const ClientType * b);
+	bool ClientComparatorByFewerEligibleDatacenters(const ClientType * a, const ClientType * b);
+	bool ClientComparatorByMoreEligibleDatacenters(const ClientType * a, const ClientType * b);
 	
 	struct DatacenterType
 	{
@@ -54,12 +55,12 @@ namespace MatchmakingProblem
 	public:		
 		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";		
 		ofstream outFile;
-		void Simulate(const string algToRun, const int clientCount = 100, const int latencyThreshold = 100, const int simulationCount = 100, const int sessionSize = 10);
+		void Simulate(const string algToRun, const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int simulationCount = 100);
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;
 		void RandomAssignmentGrouping();
 		void NearestAssignmentGrouping();
-		void SimpleGreedyGrouping(const int sessionSize);
+		void SimpleGreedyGrouping(const int sessionSize, const bool sortingClients = false, const bool sortingClientsByMoreEligibleDatacenters = false);
 	};
 }
