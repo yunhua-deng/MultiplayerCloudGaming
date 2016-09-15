@@ -1,4 +1,5 @@
-%% ratio over total
+% ratio over total
+figure
 set(gcf, 'Position', get(0, 'Screensize'));
 L_G = [25 50 100];
 for i = 1:3
@@ -23,11 +24,12 @@ for i = 1:3
     box on;
     grid on;
 end
+print('ratio_over_total', '-dmeta')
 
-%% ratio over eligible
-set(gcf, 'Position', get(0, 'Screensize'));
+% ratio over eligible
+figure
 L_G = [25 50 100];
- set(gcf, 'Position', get(0, 'Screensize'));
+set(gcf, 'Position', get(0, 'Screensize'));
 for i = 1:3
     subplot(1, 3, i);
     simple = importdata(sprintf('simple_%d.csv', L_G(i)));    
@@ -49,3 +51,4 @@ for i = 1:3
     grid on;
     box on;
 end
+print('ratio_over_eligible', '-dmeta')

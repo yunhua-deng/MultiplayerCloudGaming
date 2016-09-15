@@ -117,29 +117,10 @@ namespace MatchmakingProblem
 		for (int round = 1; round <= simulationCount; round++)
 		{	
 			/*generate candidateClients*/
-			candidateClients.clear();			
-			if (clientCount <= globalClientListCopy.size())
+			candidateClients.clear();
+			while (candidateClients.size() < clientCount)
 			{
-				random_shuffle(globalClientListCopy.begin(), globalClientListCopy.end());
-				candidateClients.assign(globalClientListCopy.begin(), globalClientListCopy.begin() + clientCount);
-			}
-			else // in case if the clientCount is greater than the total number of clients loaded from the dataset
-			{
-				while (candidateClients.size() < clientCount)
-				{
-					random_shuffle(globalClientListCopy.begin(), globalClientListCopy.end());
-					for (auto & client : globalClientListCopy)
-					{
-						if (candidateClients.size() < clientCount)
-						{
-							candidateClients.push_back(client);
-						}
-						else
-						{
-							break;
-						}
-					}
-				}
+				candidateClients.push_back(globalClientListCopy.at(GenerateRandomIndex(globalClientListCopy.size())));
 			}
 
 			/*generate candidateDatacenters*/
