@@ -20,6 +20,7 @@ namespace MatchmakingProblem
 			this->id = givenID;
 		}
 	};
+	bool ClientComparatorByEligibleDatacenterSize(const ClientType * a, const ClientType * b);
 	
 	struct DatacenterType
 	{
@@ -28,7 +29,7 @@ namespace MatchmakingProblem
 		double priceBandwidth; // bandwidth price per unit traffic volume (per GB)
 		map<int, double> delayToClient; // delay value mapped with client's id (fixed once initialized)	
 		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)		
-		vector<ClientType*> coverableClients; // alternative way to access its coverable clients		
+		vector<ClientType*> coverableClients;		
 		vector<ClientType*> assignedClients;
 
 		DatacenterType(int givenID)
@@ -58,6 +59,7 @@ namespace MatchmakingProblem
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;
 		void RandomAssignmentGrouping();
-		void NearestAssignmentGrouping();		
+		void NearestAssignmentGrouping();
+		void SimpleGreedyGrouping(const int sessionSize);
 	};
 }

@@ -32,10 +32,9 @@ int main(int argc, char *argv[])
 	auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
 	simulator.Initialize(); // initialize once
 	_mkdir(simulator.outputDirectory.c_str());	
-	for (string algToRun : { "nearest", "random" })
-	{
-		srand(0); // to ensure the random numbers genereted for each algorithm is the same
-		for (int latencyThreshold : { 50, 100 })
+	for (string algToRun : { "simple", "nearest", "random" })
+	{		
+		for (int latencyThreshold : { 25, 50, 100 })
 		{			
 			simulator.outFile = ofstream(simulator.outputDirectory + algToRun + "_" + std::to_string(latencyThreshold) + ".csv");
 			for (int clientCount = 50; clientCount <= 500; clientCount += 50)
