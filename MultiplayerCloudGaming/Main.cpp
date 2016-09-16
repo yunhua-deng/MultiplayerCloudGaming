@@ -18,15 +18,14 @@ int main(int argc, char *argv[])
 	}
 	}*/
 
-	/*ServerAllocationProblem*/
-	ServerAllocationProblem::SimulateBasicProblem(75, 50, 10);
-	ServerAllocationProblem::SimulateBasicProblem(75, 50, 50);
-	ServerAllocationProblem::SimulateBasicProblem(150, 100, 10);
-	ServerAllocationProblem::SimulateBasicProblem(150, 100, 50);
-	ServerAllocationProblem::SimulateGeneralProblem(75, 50, 10);
-	ServerAllocationProblem::SimulateGeneralProblem(75, 50, 50);
-	ServerAllocationProblem::SimulateGeneralProblem(150, 100, 10);
-	ServerAllocationProblem::SimulateGeneralProblem(150, 100, 50);
+	/*ServerAllocationProblem*/	
+	for (double sessionSize : { 10, 50 })
+	{
+		ServerAllocationProblem::SimulateBasicProblem(75, 50, sessionSize);
+		ServerAllocationProblem::SimulateBasicProblem(150, 100, sessionSize);
+		ServerAllocationProblem::SimulateGeneralProblem(75, 50, sessionSize);
+		ServerAllocationProblem::SimulateGeneralProblem(150, 100, sessionSize);
+	}
 
 	/*MatchmakingProblem*/
 	//auto simulator = MatchmakingProblem::MaximumMatchingProblem();	

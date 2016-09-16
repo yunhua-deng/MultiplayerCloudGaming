@@ -44,8 +44,8 @@ namespace ServerAllocationProblem
 	};
 	
 	bool Initialize(string, vector<ClientType*> &, vector<DatacenterType*> &);
-	void SimulateBasicProblem(double, double, double, double SESSION_COUNT = 1000);
-	void SimulateGeneralProblem(double, double, double, double SESSION_COUNT = 1000);
+	void SimulateBasicProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double SESSION_COUNT = 1000);
+	void SimulateGeneralProblem(double DELAY_BOUND_TO_G, double DELAY_BOUND_TO_R, double SESSION_SIZE, double SESSION_COUNT = 1000);
 
 	void ResetEligibiltyCoverability(vector<ClientType*>, vector<DatacenterType*>);
 	void ResetAssignment(vector<ClientType*>, vector<DatacenterType*> &);
@@ -139,24 +139,15 @@ namespace ServerAllocationProblem
 	// Lowest-Capacity-Wastage-Assignment (LCW)
 	// overloaded for general problem
 	tuple<double, double, double, double, double> Alg_LCW(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double, bool includingGServerCost = false);
-
-	// Lowest-Average-Cost-Assignment (LAC)
-	// Idea: open exactly one server at each iteration, and where to open the server is determined based on the average cost contributed by all clients that are to be assigned to this server
-	// if server capacity < 2, reduce to LCP
+	
+	// Lowest-Amortized-Cost-Assignment (LAC)
+	// calculates the amortized server cost per client (simple server price / number of added clients)
+	// calculates the average bandwidth cost per client by considering only the at most top k unassigned clients according a ranking (less traffic to more traffic) where k is the server capacity
+	// the total amortized cost is the sum of the above two
 	// for basic problem
 	tuple<double, double, double, double, double> Alg_LAC(const vector<ClientType*> &, const vector<DatacenterType*> &, double, int);
 
-	// Lowest-Average-Cost-Assignment (LAC)
+	// Lowest-Amortized-Cost-Assignment (LAC)
 	// overloaded for general problem
 	tuple<double, double, double, double, double> Alg_LAC(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double, bool includingGServerCost = false);
-
-	// Lowest-Average-Cost-Sorted (LACS)
-	// the original LAC calculates the average bandwidth cost per client by considering all the unassigned clients in that dc
-	// while the LACS calculates the average bandwidth cost per client by considering only the at most top k unassigned clients according a ranking (less traffic to more traffic) where k is the server capacity
-	// for basic problem
-	tuple<double, double, double, double, double> Alg_LACS(const vector<ClientType*> &, const vector<DatacenterType*> &, double, int);
-
-	// Lowest-Average-Cost-Assignment (LACS)
-	// overloaded for general problem
-	tuple<double, double, double, double, double> Alg_LACS(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double, bool includingGServerCost = false);
 }

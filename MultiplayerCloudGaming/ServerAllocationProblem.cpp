@@ -247,8 +247,7 @@ namespace ServerAllocationProblem
 		}
 		return (totalAssignedClientCount == (int)sessionClients.size());
 	}
-	
-	/*return true if the frist <= second*/
+		
 	bool ClientComparatorByTrafficVolume(const ClientType * A, const ClientType * B)
 	{
 		return (A->chargedTrafficVolume <= B->chargedTrafficVolume);
@@ -256,6 +255,16 @@ namespace ServerAllocationProblem
 
 	bool Initialize(string dataDirectory, vector<ClientType*> &allClients, vector<DatacenterType*> &allDatacenters)
 	{
+		/*datasets of CCR'13 and TCC'15*/
+		string ClientDatacenterLatencyFile = "dc_to_pl_rtt.csv";
+		string InterDatacenterLatencyFile = "dc_to_dc_rtt.csv";
+		string BandwidthServerPricingFile = "dc_pricing_bandwidth_server.csv";
+
+		/*datasets of ours*/
+		/*string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv";
+		string InterDatacenterLatencyFile = "ping_to_dc_median_matrix.csv";
+		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";*/
+		
 		/* temporary stuff */
 		vector<vector<double>> ClientToDatacenterDelayMatrix;
 		vector<vector<double>> InterDatacenterDelayMatrix;
@@ -263,7 +272,7 @@ namespace ServerAllocationProblem
 		vector<double> priceBandwidthList;
 		
 		/* client-to-dc latency data */
-		auto strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + "dc_to_pl_rtt.csv", ',', true);
+		auto strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + ClientDatacenterLatencyFile, ',', true);
 		if (strings_read.empty())
 		{	
 			printf("ERROR: empty file!\n");
@@ -281,7 +290,7 @@ namespace ServerAllocationProblem
 		}
 
 		/*dc-to-dc latency data*/
-		strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + "dc_to_dc_rtt.csv", ',', true);
+		strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + InterDatacenterLatencyFile, ',', true);
 		if (strings_read.empty())
 		{
 			printf("ERROR: empty file!\n");
@@ -300,7 +309,7 @@ namespace ServerAllocationProblem
 		const int totalClientCount = int(ClientToDatacenterDelayMatrix.size());
 
 		/* bandwidth and server price data */
-		strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + "dc_pricing_bandwidth_server.csv", ',', true);
+		strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + BandwidthServerPricingFile, ',', true);
 		if (strings_read.empty())
 		{
 			printf("ERROR: empty file!\n");
@@ -352,7 +361,7 @@ namespace ServerAllocationProblem
 
 	void WriteCostWastageDelayData(int STRATEGY_COUNT, vector<double> SERVER_CAPACITY_LIST, double SESSION_COUNT,
 		vector<vector<vector<tuple<double, double, double, double, double>>>>& outcomeAtAllSessions,
-		string dataDirectory, string experimentSettings)
+		string outputDirectory, string experimentSettings)
 	{
 		// record total cost to files
 		vector<vector<vector<double>>> costTotalStrategyCapacitySession;
@@ -372,8 +381,8 @@ namespace ServerAllocationProblem
 			costTotalStrategyCapacitySession.push_back(costTotalCapacitySession); // for each strategy i
 		}
 		
-		ofstream costTotalMeanFile(dataDirectory + "Output\\" + experimentSettings + "_" + "costTotalMean.csv");
-		ofstream costTotalStdFile(dataDirectory + "Output\\" + experimentSettings + "_" + "costTotalStd.csv");
+		ofstream costTotalMeanFile(outputDirectory + experimentSettings + "_" + "costTotalMean.csv");
+		ofstream costTotalStdFile(outputDirectory + experimentSettings + "_" + "costTotalStd.csv");
 		for (size_t j = 0; j < SERVER_CAPACITY_LIST.size(); j++)
 		{
 			for (int i = 0; i < STRATEGY_COUNT; i++)
@@ -404,8 +413,8 @@ namespace ServerAllocationProblem
 			capacityWastageStrategyCapacitySession.push_back(capacityWastageCapacitySession); // for each strategy i
 		}
 				
-		ofstream capacityWastageMeanFile(dataDirectory + "Output\\" + experimentSettings + "_" + "capacityWastageMean.csv");
-		ofstream capacityWastageStdFile(dataDirectory + "Output\\" + experimentSettings + "_" + "capacityWastageStd.csv");
+		ofstream capacityWastageMeanFile(outputDirectory + experimentSettings + "_" + "capacityWastageMean.csv");
+		ofstream capacityWastageStdFile(outputDirectory + experimentSettings + "_" + "capacityWastageStd.csv");
 		for (size_t j = 0; j < SERVER_CAPACITY_LIST.size(); j++)
 		{
 			for (int i = 0; i < STRATEGY_COUNT; i++)
@@ -436,8 +445,8 @@ namespace ServerAllocationProblem
 			averageDelayStrategyCapacitySession.push_back(averageDelayCapacitySession); // for each strategy i
 		}
 		
-		ofstream averageDelayMeanFile(dataDirectory + "Output\\" + experimentSettings + "_" + "averageDelayMean.csv");
-		ofstream averageDelayStdFile(dataDirectory + "Output\\" + experimentSettings + "_" + "averageDelayStd.csv");
+		ofstream averageDelayMeanFile(outputDirectory + experimentSettings + "_" + "averageDelayMean.csv");
+		ofstream averageDelayStdFile(outputDirectory + experimentSettings + "_" + "averageDelayStd.csv");
 		for (size_t j = 0; j < SERVER_CAPACITY_LIST.size(); j++)
 		{
 			for (int i = 0; i < STRATEGY_COUNT; i++)
@@ -458,7 +467,9 @@ namespace ServerAllocationProblem
 
 		auto t0 = clock(); // start time	
 
-		string dataDirectory = ".\\Data\\ProblemBasic\\";
+		string dataDirectory = ".\\Data\\";
+		string outputDirectory = dataDirectory + "ServerAllocationProblemBasic\\";
+		_mkdir(outputDirectory.c_str());
 		vector<ClientType*> allClients;
 		vector<DatacenterType*> allDatacenters;
 		if (!Initialize(dataDirectory, allClients, allDatacenters))
@@ -475,8 +486,8 @@ namespace ServerAllocationProblem
 		vector<int> GDatacenterIDAtAllSessions;
 		vector<double> matchmakingTimeAtAllSessions;
 
-		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8 };
-		int STRATEGY_COUNT = 9;
+		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8, 10 };
+		int STRATEGY_COUNT = 8;
 
 		for (int sessionID = 1; sessionID <= SESSION_COUNT; sessionID++)
 		{
@@ -541,10 +552,7 @@ namespace ServerAllocationProblem
 						break;
 					case 8:
 						outcome = Alg_LAC(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
-						break;
-					case 9:
-						outcome = Alg_LACS(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
-						break;
+						break;					
 					default:
 						outcome = tuple<double, double, double, double, double>(0, 0, 0, 0, 0);
 						break;
@@ -579,10 +587,12 @@ namespace ServerAllocationProblem
 		string experimentSettings = std::to_string((int)DELAY_BOUND_TO_G) + "_" + std::to_string((int)DELAY_BOUND_TO_R) + "_" + std::to_string((int)SESSION_SIZE);
 
 		// record cost, wastage and delay
-		WriteCostWastageDelayData(STRATEGY_COUNT, SERVER_CAPACITY_LIST, SESSION_COUNT, outcomeAtAllSessions, dataDirectory, experimentSettings);
+		WriteCostWastageDelayData(STRATEGY_COUNT, SERVER_CAPACITY_LIST, SESSION_COUNT, outcomeAtAllSessions, outputDirectory, experimentSettings);
 
-		// record eligible RDatacenter count		
-		ofstream eligibleRDatacenterCountFile(dataDirectory + "Output\\eligibleRDatacenterCount\\" + experimentSettings + "_" + "eligibleRDatacenterCount.csv");
+		// record eligible RDatacenter count
+		string eligibleRDatacenterCountDirectory = outputDirectory + "eligibleRDatacenterCount\\";
+		_mkdir(eligibleRDatacenterCountDirectory.c_str());
+		ofstream eligibleRDatacenterCountFile(eligibleRDatacenterCountDirectory + experimentSettings + "_" + "eligibleRDatacenterCount.csv");
 		for (auto it : eligibleRDatacenterCount)
 		{
 			eligibleRDatacenterCountFile << it << "\n";
@@ -590,7 +600,9 @@ namespace ServerAllocationProblem
 		eligibleRDatacenterCountFile.close();
 
 		// record GDatancenter		
-		/*ofstream GDatacenterIDFile(dataDirectory + "Output\\GDatacenterID\\" + experimentSettings + "_" + "GDatacenterID.csv");
+		/*string GDatacenterIDDirectory = outputDirectory + "GDatacenterID\\";
+		_mkdir(GDatacenterIDDirectory.c_str());
+		ofstream GDatacenterIDFile(GDatacenterIDDirectory + experimentSettings + "_" + "GDatacenterID.csv");
 		for (auto it : GDatacenterIDAtAllSessions)
 		{
 			GDatacenterIDFile << it << "\n";
@@ -598,7 +610,7 @@ namespace ServerAllocationProblem
 		GDatacenterIDFile.close();*/
 
 		// record matchmaking's time
-		/*ofstream matchmakingTimeFile(dataDirectory + "Output\\" + experimentSettings + "_" + "matchmakingTime");
+		/*ofstream matchmakingTimeFile(outputDirectory + experimentSettings + "_" + "matchmakingTime");
 		for (auto it : matchmakingTimeAtAllSessions)
 		{
 			matchmakingTimeFile << it << "\n";
@@ -621,8 +633,8 @@ namespace ServerAllocationProblem
 			}
 			computationStrategyCapacitySession.push_back(computationCapacitySession); // for each strategy i
 		}		
-		ofstream computationMeanFile(dataDirectory + "Output\\" + experimentSettings + "_" + "computationMean.csv");
-		ofstream computationStdFile(dataDirectory + "Output\\" + experimentSettings + "_" + "computationStd.csv");
+		ofstream computationMeanFile(outputDirectory + experimentSettings + "_" + "computationMean.csv");
+		ofstream computationStdFile(outputDirectory + experimentSettings + "_" + "computationStd.csv");
 		for (size_t j = 0; j < SERVER_CAPACITY_LIST.size(); j++)
 		{
 			for (int i = 0; i < STRATEGY_COUNT; i++)
@@ -650,7 +662,9 @@ namespace ServerAllocationProblem
 
 		auto t0 = clock(); // start time	
 
-		string dataDirectory = ".\\Data\\ProblemGeneral\\";
+		string dataDirectory = ".\\Data\\";
+		string outputDirectory = dataDirectory + "ServerAllocationProblemGeneral\\";
+		_mkdir(outputDirectory.c_str());
 		vector<ClientType*> allClients;
 		vector<DatacenterType*> allDatacenters;
 		if (!Initialize(dataDirectory, allClients, allDatacenters))
@@ -678,8 +692,8 @@ namespace ServerAllocationProblem
 			serverCountPerDC4LAC[dc->id] = 0;
 		}
 
-		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8 };
-		int STRATEGY_COUNT = 9;
+		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8, 10 };
+		int STRATEGY_COUNT = 8;
 
 		for (int sessionID = 1; sessionID <= SESSION_COUNT; sessionID++)
 		{
@@ -768,10 +782,7 @@ namespace ServerAllocationProblem
 								serverCountPerDC4LAC[dc->id] += dc->openServerCount;
 							}
 						}*/
-						break;
-					case 9:
-						outcome = Alg_LACS(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
-						break;
+						break;					
 					default:
 						outcome = tuple<double, double, double, double, double>(0, 0, 0, 0, 0);
 						break;
@@ -811,10 +822,10 @@ namespace ServerAllocationProblem
 		string experimentSettings = std::to_string((int)DELAY_BOUND_TO_G) + "_" + std::to_string((int)DELAY_BOUND_TO_R) + "_" + std::to_string((int)SESSION_SIZE);
 
 		// record cost, wastage and delay
-		WriteCostWastageDelayData(STRATEGY_COUNT, SERVER_CAPACITY_LIST, SESSION_COUNT, outcomeAtAllSessions, dataDirectory, experimentSettings);
+		WriteCostWastageDelayData(STRATEGY_COUNT, SERVER_CAPACITY_LIST, SESSION_COUNT, outcomeAtAllSessions, outputDirectory, experimentSettings);
 
 		// record server count at each datacenter in all sessions		
-		ofstream serverCountPerDCFile(dataDirectory + "Output\\" + experimentSettings + "_" + "serverCountPerDC.csv");
+		ofstream serverCountPerDCFile(outputDirectory + experimentSettings + "_" + "serverCountPerDC.csv");
 		for (auto dc : allDatacenters)
 		{
 			serverCountPerDCFile << serverCountPerDC4LCP[dc->id] << ",";
@@ -832,7 +843,9 @@ namespace ServerAllocationProblem
 		serverCountPerDCFile.close();
 
 		// record final G datacenter
-		/*ofstream finalGDatacenterFile(dataDirectory + "Output\\finalGDatacenterID\\" + experimentSettings + "_" + "finalGDatacenterID.csv");
+		/*string finalGDatacenterDirectory = outputDirectory + "finalGDatacenterID\\";
+		_mkdir(finalGDatacenterDirectory.c_str());
+		ofstream finalGDatacenterFile(finalGDatacenterDirectory + experimentSettings + "_" + "finalGDatacenterID.csv");
 		for (size_t i = 0; i < finalGDatacenterAtAllSessions.size(); i++)
 		{
 			for (size_t j = 0; j < finalGDatacenterAtAllSessions.at(i).size(); j++)
@@ -847,8 +860,9 @@ namespace ServerAllocationProblem
 		finalGDatacenterFile.close();*/
 
 		// record eligible GDatacenter count
-		
-		ofstream eligibleGDatacenterCountFile(dataDirectory + "Output\\eligibleGDatacenterCount\\" + experimentSettings + "_" + "eligibleGDatacenterCount.csv");
+		string elgibleGDatacenterCountDirectory = outputDirectory + "eligibleGDatacenterCount\\";
+		_mkdir(elgibleGDatacenterCountDirectory.c_str());
+		ofstream eligibleGDatacenterCountFile(elgibleGDatacenterCountDirectory + experimentSettings + "_" + "eligibleGDatacenterCount.csv");
 		for (auto it : eligibleGDatacenterCountAtAllSessions)
 		{
 			eligibleGDatacenterCountFile << it << "\n";
@@ -871,8 +885,8 @@ namespace ServerAllocationProblem
 			}
 			computationStrategyCapacitySession.push_back(computationCapacitySession); // for each strategy i
 		}		
-		ofstream computationMeanFile(dataDirectory + "Output\\" + experimentSettings + "_" + "computationMean.csv");
-		ofstream computationStdFile(dataDirectory + "Output\\" + experimentSettings + "_" + "computationStd.csv");
+		ofstream computationMeanFile(outputDirectory + experimentSettings + "_" + "computationMean.csv");
+		ofstream computationStdFile(outputDirectory + experimentSettings + "_" + "computationStd.csv");
 		for (size_t j = 0; j < SERVER_CAPACITY_LIST.size(); j++)
 		{
 			for (int i = 0; i < STRATEGY_COUNT; i++)
@@ -1453,133 +1467,12 @@ namespace ServerAllocationProblem
 		return finalOutcome;
 	}
 
-	// Lowest-Average-Cost-Assignment (LAC)
-	// Idea: open exactly one server at each iteration, and where to open the server is determined based on the average cost contributed by all clients that are to be assigned to this server
-	// if server capacity < 2, reduce to LCP
-	// for basic problem
 	tuple<double, double, double, double, double> Alg_LAC(
 		const vector<ClientType*> &sessionClients,
 		const vector<DatacenterType*> &allDatacenters,
 		double serverCapacity,
 		int GDatacenterID)
 	{
-		if (serverCapacity < 2)	return Alg_LCP(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
-
-		ResetAssignment(sessionClients, allDatacenters);
-
-		while (true)
-		{
-			// update for the new iteration
-			vector<DatacenterType*> candidateDatacenters;
-			candidateDatacenters.clear();
-			for (auto dc : allDatacenters)
-			{
-				dc->unassignedCoverableClients.clear();
-
-				for (auto client : dc->coverableClients)
-				{
-					if (client->assignedDatacenterID < 0) { dc->unassignedCoverableClients.push_back(client); }
-				}
-
-				if (!dc->unassignedCoverableClients.empty()) { candidateDatacenters.push_back(dc); }
-			}
-
-			// all clients are assigned, so terminate the loop
-			if (candidateDatacenters.empty()) {	break; }
-
-			// compute the average cost per client if opening a server in each dc		
-			for (auto dc : candidateDatacenters)
-			{				
-				if (dc->unassignedCoverableClients.empty())
-				{
-					dc->amortizedCostPerClient = INT_MAX;
-				}
-				else
-				{
-					size_t addedClientCount = (dc->unassignedCoverableClients.size() <= serverCapacity) ? dc->unassignedCoverableClients.size() : (size_t)serverCapacity;
-					double totalBandwidthCostOfAllCandidateClients = 0;
-					for (auto client : dc->unassignedCoverableClients) { totalBandwidthCostOfAllCandidateClients += dc->priceBandwidth * client->chargedTrafficVolume; }
-					
-					dc->amortizedCostPerClient = dc->priceServer / addedClientCount + totalBandwidthCostOfAllCandidateClients / dc->unassignedCoverableClients.size();
-				}
-			}
-
-			// assign at most (serverCapacity) unassignedCoverable clients to the dc with the lowest amortizedCostPerClient
-			auto nextDC = candidateDatacenters.front();
-			for (auto cdc : candidateDatacenters)
-			{
-				if (cdc->amortizedCostPerClient < nextDC->amortizedCostPerClient)
-				{
-					nextDC = cdc;
-				}
-			}
-			int numberOfClientsToAssign = ((int)nextDC->unassignedCoverableClients.size() <= serverCapacity) ? (int)nextDC->unassignedCoverableClients.size() : (int)serverCapacity;
-			for (size_t i = 0; i < numberOfClientsToAssign; i++)
-			{
-				nextDC->unassignedCoverableClients.at(i)->assignedDatacenterID = nextDC->id;
-				nextDC->assignedClients.push_back(nextDC->unassignedCoverableClients.at(i));
-			}
-		}
-
-		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
-	}
-
-	// Lowest-Average-Cost-Assignment (LAC)
-	// overloaded for general problem
-	tuple<double, double, double, double, double> Alg_LAC(
-		vector<DatacenterType*> eligibleGDatacenters,
-		int &finalGDatacenter,
-		const vector<ClientType*> &sessionClients,
-		const vector<DatacenterType*> &allDatacenters,
-		double DELAY_BOUND_TO_G,
-		double DELAY_BOUND_TO_R,
-		double serverCapacity,
-		bool includingGServerCost)
-	{
-		tuple<double, double, double, double, double> finalOutcome;
-		double totalCost = INT_MAX;
-		int tempFinalGDatacenter = eligibleGDatacenters.front()->id;
-
-		map<int, double> finalServerCountPerDC; // newly added
-
-		for (auto GDatacenter : eligibleGDatacenters)
-		{
-			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
-			auto tempOutcome = Alg_LAC(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
-			double tempTotalCost = get<0>(tempOutcome);
-
-			map<int, double> tempServerCountPerDC; // newly added
-			for (auto dc : allDatacenters) // newly added
-			{
-				tempServerCountPerDC[dc->id] = dc->openServerCount;
-			}
-			//IncludeGServerCost(GDatacenter, (int)sessionClients.size(), includingGServerCost, tempTotalCost);
-			if (tempTotalCost < totalCost) // choose the smaller cost
-			{
-				totalCost = tempTotalCost;
-				finalOutcome = tempOutcome;
-				tempFinalGDatacenter = GDatacenter->id;
-				finalServerCountPerDC = tempServerCountPerDC; // newly added
-			}
-		}
-
-		finalGDatacenter = tempFinalGDatacenter;
-
-		for (auto dc : allDatacenters) // newly added
-		{
-			dc->openServerCount = finalServerCountPerDC[dc->id];
-		}
-
-		return finalOutcome;
-	}
-
-	tuple<double, double, double, double, double> Alg_LACS(
-		const vector<ClientType*> &sessionClients,
-		const vector<DatacenterType*> &allDatacenters,
-		double serverCapacity,
-		int GDatacenterID)
-	{
-
 		if (serverCapacity < 2)	return Alg_LCP(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
 
 		ResetAssignment(sessionClients, allDatacenters);
@@ -1619,6 +1512,7 @@ namespace ServerAllocationProblem
 					
 					// the number of newly added clients if openning a new server in cdc
 					size_t addedClientCount = (cdc->unassignedCoverableClients.size() <= serverCapacity) ? cdc->unassignedCoverableClients.size() : (size_t)serverCapacity;
+					
 					double totalBandwidthCostOfAddedClients = 0;
 					for (size_t i = 0; i < addedClientCount; i++) { totalBandwidthCostOfAddedClients += cdc->priceBandwidth * cdc->unassignedCoverableClients.at(i)->chargedTrafficVolume; }
 					
@@ -1646,7 +1540,7 @@ namespace ServerAllocationProblem
 		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
 	}
 
-	tuple<double, double, double, double, double> Alg_LACS(
+	tuple<double, double, double, double, double> Alg_LAC(
 		vector<DatacenterType*> eligibleGDatacenters,
 		int &finalGDatacenter,
 		const vector<ClientType*> &sessionClients,
@@ -1665,7 +1559,7 @@ namespace ServerAllocationProblem
 		for (auto GDatacenter : eligibleGDatacenters)
 		{
 			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
-			auto tempOutcome = Alg_LACS(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
+			auto tempOutcome = Alg_LAC(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
 			double tempTotalCost = get<0>(tempOutcome);
 
 			map<int, double> tempServerCountPerDC; // newly added

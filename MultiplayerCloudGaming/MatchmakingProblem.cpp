@@ -7,7 +7,7 @@ namespace MatchmakingProblem
 		//string ClientDatacenterLatencyFile = "ping_to_pl_median_matrix.csv"; // small dataset
 		string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv"; // large dataset
 		string InterDatacenterLatencyFile = "ping_to_dc_median_matrix.csv";
-		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";		
+		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";
 		
 		this->globalClientList.clear();
 		this->globalDatacenterList.clear();

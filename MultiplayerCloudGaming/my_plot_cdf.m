@@ -1,59 +1,129 @@
-%% eligible RDatacenter count cdf
+%% eligible RDatacenter count cdf (basic problem) seperate session sizes (10 and 50 only)
+L_G = [75 150];
+L_R = [50 100];
+
+legend_name = repmat('', 2, 1);
+line_style = {'-', ':'};
+
+for size = [10 50]
+    for i = 1:2
+        data = importdata(sprintf('%d_%d_%d_eligibleRDatacenterCount.csv', L_G(i), L_R(i), size));
+        p_h = cdfplot(data);    
+        hold on;
+        set(p_h, 'LineStyle', line_style{i}, 'LineWidth', 3, 'Color', 'k'); 
+        legend_name{i} = sprintf('(L_G = %d, L_R = %d)', L_G(i)*2, L_R(i)*2);
+    end
+    set(gca, 'XLim', [1 10]);
+    %set(gca, 'XTick', [0 1 2 3 4 5 6 7 8 9 10 11 12 13]);
+    %set(gca, 'YTick', [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1]);
+    set(gca, 'fontsize', 16);
+    lh = legend(legend_name, 'Orientation', 'vertical', 'Location', 'southeast');
+    set(lh, 'FontSize', 16);
+    xlabel('Number of eligible datacenters per client', 'FontSize', 18);
+    ylabel('Cumulative Dist. Function', 'FontSize', 18);
+    %title(sprintf('|C| = %d', size));
+    title('');
+
+    pbaspect([2.5 1 1]);
+    grid on;
+    file_name = sprintf('%d_eligibleRDatacenterCount', size);
+    %savefig(file_name);
+    print(file_name, '-dmeta');
+    hold off;
+end
+
+%% eligible GDatacenter count cdf (general problem) seperate session sizes (10 and 50 only)
+L_G = [75 150];
+L_R = [50 100];
+
+legend_name = repmat('', 2, 1);
+line_style = {'-', ':'};
+
+for size = [10 50]
+    for i = 1:2
+        data = importdata(sprintf('%d_%d_%d_eligibleGDatacenterCount.csv', L_G(i), L_R(i), size));
+        p_h = cdfplot(data);    
+        hold on;
+        set(p_h, 'LineStyle', line_style{i}, 'LineWidth', 3, 'Color', 'k'); 
+        legend_name{i} = sprintf('(L_G = %d, L_R = %d)', L_G(i)*2, L_R(i)*2);
+    end
+    set(gca, 'XLim', [1 13]);
+    set(gca, 'XTick', [0 1 2 3 4 5 6 7 8 9 10 11 12 13]);
+    %set(gca, 'YTick', [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1]);
+    set(gca, 'fontsize', 16);
+    lh = legend(legend_name, 'Orientation', 'vertical', 'Location', 'southeast');
+    set(lh, 'FontSize', 16);
+    xlabel('Number of eligible datacenters for G-server placement', 'FontSize', 18);
+    ylabel('Cumulative Dist. Function', 'FontSize', 18);
+    %title(sprintf('|C| = %d', size));
+    title('');
+    
+    pbaspect([2.5 1 1]);
+    grid on;
+    file_name = sprintf('%d_eligibleGDatacenterCount', size);
+    %savefig(file_name);
+    print(file_name, '-dmeta');
+    hold off;
+end
+
+%% eligible RDatacenter count cdf (basic problem) all session sizes
 L_G = [75 150];
 L_R = [50 100];
 legend_name = repmat('', 2, 1);
 line_style = {'-', ':'};
 
 for i = 1:2
-    data = importdata(sprintf('%d_%d_eligibleRDatacenterCount', L_G(i), L_R(i))); 
+    data = importdata(sprintf('%d_%d_eligibleRDatacenterCount.csv', L_G(i), L_R(i))); 
     p_h = cdfplot(data);    
     hold on;
     set(p_h, 'LineStyle', line_style{i}, 'LineWidth', 3, 'Color', 'k'); 
     legend_name{i} = sprintf('(L_G = %d, L_R = %d)', L_G(i)*2, L_R(i)*2);
 end
 
-set(gca, 'XTick', [0 1 2 3 4 5 6 7 8 9 10 11 12 13]);
-set(gca, 'YTick', [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1]);
-set(gca, 'fontsize', 18);
+set(gca, 'XLim', [1 10]);
+%set(gca, 'XTick', [0 1 2 3 4 5 6 7 8 9 10 11 12 13]);
+%set(gca, 'YTick', [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1]);
+set(gca, 'fontsize', 14);
 lh = legend(legend_name, 'Orientation', 'vertical', 'Location', 'southeast');
-set(lh, 'FontSize', 18);
-xlabel('Number of eligible datacenters per client', 'FontSize', 20);
-ylabel('CDF', 'FontSize', 20);
+set(lh, 'FontSize', 14);
+xlabel('Number of eligible datacenters per client (basic problem)', 'FontSize', 16);
+ylabel('Cumulative Dist. Function', 'FontSize', 16);
 title('');
 
-pbaspect([1.5 1 1]);
+pbaspect([2.5 1 1]);
 grid on;
 file_name = 'cdf_eligibleRDatacenterCount';
-savefig(file_name);
+%savefig(file_name);
 print(file_name, '-dmeta');
 
-%% eligible GDatacenter count cdf
+%% eligible GDatacenter count cdf (general problem) all session sizes
 L_G = [75 150];
 L_R = [50 100];
 legend_name = repmat('', 2, 1);
 line_style = {'-', ':'};
 
 for i = 1:2
-    data = importdata(sprintf('%d_%d_eligibleGDatacenterCount', L_G(i), L_R(i))); 
+    data = importdata(sprintf('%d_%d_eligibleGDatacenterCount.csv', L_G(i), L_R(i))); 
     p_h = cdfplot(data);    
     hold on;
     set(p_h, 'LineStyle', line_style{i}, 'LineWidth', 3, 'Color', 'k'); 
     legend_name{i} = sprintf('(L_G = %d, L_R = %d)', L_G(i)*2, L_R(i)*2);
 end
 
+set(gca, 'XLim', [1 13]);
 set(gca, 'XTick', [0 1 2 3 4 5 6 7 8 9 10 11 12 13]);
-set(gca, 'YTick', [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1]);
-set(gca, 'fontsize', 18);
+%set(gca, 'YTick', [0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1]);
+set(gca, 'fontsize', 14);
 lh = legend(legend_name, 'Orientation', 'vertical', 'Location', 'southeast');
-set(lh, 'FontSize', 18);
-xlabel('Number of eligible datacenters for G-server placement', 'FontSize', 20);
-ylabel('CDF', 'FontSize', 20);
+set(lh, 'FontSize', 14);
+xlabel('Number of eligible datacenters for G-server placement (general problem)', 'FontSize', 16);
+ylabel('Culmulative Dist. Function', 'FontSize', 16);
 title('');
 
-pbaspect([1.5 1 1]);
+pbaspect([2.5 1 1]);
 grid on;
 file_name = 'cdf_eligibleGDatacenterCount';
-savefig(file_name);
+%savefig(file_name);
 print(file_name, '-dmeta');
 
 %% GDatacenter (basic problem)
@@ -63,7 +133,7 @@ size = [10 50];
 y_max = 20;
 for j = 1:2
     for i = 1:2
-        file_name = sprintf('%d_%d_%d_2_GDatacenterID', L_G(i), L_R(i), size(j));
+        file_name = sprintf('%d_%d_GDatacenterID.csv', L_G(i), L_R(i), size(j));
         data = importdata(file_name);
         data = data + 1;
         histogram(data);
@@ -92,7 +162,7 @@ size = [10 50];
 for j = 1:2
     for i = 1:2
         figure;
-        file_name = sprintf('%d_%d_%d_2_finalGDatacenterID', L_G(i), L_R(i), size(j));
+        file_name = sprintf('%d_%d_finalGDatacenterID.csv', L_G(i), L_R(i), size(j));
         data = importdata(file_name);
         data = data + 1;
         data = data(:, 6); % LSP only        
@@ -122,7 +192,7 @@ size = [10 50];
 for j = 1:2
     for i = 1:2
         figure;
-        file_name = sprintf('%d_%d_%d_2_finalGDatacenterID', L_G(i), L_R(i), size(j));
+        file_name = sprintf('%d_%d_finalGDatacenterID.csv', L_G(i), L_R(i), size(j));
         data = importdata(file_name);
         data = data + 1;
         data = data(:, 7); % LCW only        
@@ -152,7 +222,7 @@ size = [10 50];
 for j = 1:2
     for i = 1:2
         figure;
-        file_name = sprintf('%d_%d_%d_2_finalGDatacenterID', L_G(i), L_R(i), size(j));
+        file_name = sprintf('%d_%d_finalGDatacenterID.csv', L_G(i), L_R(i), size(j));
         data = importdata(file_name);
         data = data + 1;
         data = data(:, 8); % LAC only        
@@ -178,7 +248,7 @@ size = [10 50];
 for j = 1:2
     for i = 1:2
         figure;
-        file_name = sprintf('%d_%d_%d_2_serverCountPerDC', L_G(i), L_R(i), size(j));
+        file_name = sprintf('%d_%d_serverCountPerDC.csv', L_G(i), L_R(i), size(j));
         data = importdata(file_name);
         data = data(1, :)./100; % LCP
         bar(data);
@@ -202,7 +272,7 @@ size = [10 50];
 for j = 1:2
     for i = 1:2
         figure;
-        file_name = sprintf('%d_%d_%d_2_serverCountPerDC', L_G(i), L_R(i), size(j));
+        file_name = sprintf('%d_%d_serverCountPerDC.csv', L_G(i), L_R(i), size(j));
         data = importdata(file_name);
         data = data(2, :)./100; % LCW
         bar(data);
@@ -226,7 +296,7 @@ size = [10 50];
 for j = 1:2
     for i = 1:2
         figure;
-        file_name = sprintf('%d_%d_%d_2_serverCountPerDC', L_G(i), L_R(i), size(j));
+        file_name = sprintf('%d_%d_serverCountPerDC.csv', L_G(i), L_R(i), size(j));
         data = importdata(file_name);
         data = data(3, :)./100; % LAC
         bar(data);
