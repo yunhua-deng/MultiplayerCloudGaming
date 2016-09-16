@@ -53,8 +53,8 @@ for j = 1:2
        set(gca, 'fontsize', 14);
        xlabel('Server capacity: k', 'FontSize', 14);
        ylabel('Normalized cost', 'FontSize', 20);
-       lh = legend('RA', 'NA', 'LSP', 'LBP', 'LCP', 'LCW', 'LAC', 'Orientation', 'vertical', 'Location', 'best');
-       set(lh, 'FontSize', 12);       
+       lh = legend('RA', 'NA', 'LSP', 'LBP', 'LCP', 'LCW', 'LAC', 'Orientation', 'vertical', 'Location', 'northwest');
+       set(lh, 'FontSize', 14);       
        title(sprintf('(L_G = %d, L_R = %d); \t (|C| = %d)', L_G(i)*2, L_R(i)*2, size(j)));
        grid on;       
     end 

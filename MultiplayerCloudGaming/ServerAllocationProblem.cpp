@@ -1476,60 +1476,45 @@ namespace ServerAllocationProblem
 		if (serverCapacity < 2)	return Alg_LCP(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
 
 		ResetAssignment(sessionClients, allDatacenters);
+				
+		for (auto dc : allDatacenters) { sort(dc->coverableClients.begin(), dc->coverableClients.end(), ClientComparatorByTrafficVolume); }
 
 		while (true)
 		{
-			// update for the new iteration
-			vector<DatacenterType*> candidateDatacenters;
-			candidateDatacenters.clear();
+			// prepare for this iteration
+			vector<DatacenterType*> candidateDatacenters;			
 			for (auto dc : allDatacenters)
 			{
-				dc->unassignedCoverableClients.clear();
-
-				for (auto client : dc->coverableClients)
-				{
-					if (client->assignedDatacenterID < 0) { dc->unassignedCoverableClients.push_back(client); }
-				}
-
+				dc->unassignedCoverableClients.clear();				
+				for (auto client : dc->coverableClients) { if (client->assignedDatacenterID < 0) dc->unassignedCoverableClients.push_back(client); }
+				
 				if (!dc->unassignedCoverableClients.empty()) { candidateDatacenters.push_back(dc); }
 			}
 
 			// no unassigned clients at all, so terminate the loop
 			if (candidateDatacenters.empty()) { break; }
 
-			// compute the average cost per client if opening a server in each cdc
+			// compute the amortized cost per client if opening a server in each cdc
 			for (auto cdc : candidateDatacenters)
 			{				
-				// calculate the amortizedCostPerClient based on the unassignedCoverableClients
-				if (cdc->unassignedCoverableClients.empty())
+				const size_t addedClientCount = (cdc->unassignedCoverableClients.size() <= serverCapacity) ? cdc->unassignedCoverableClients.size() : (size_t)serverCapacity;
+				if (0 == addedClientCount) { cdc->amortizedCostPerClient = INT_MAX; } // double-check
+				else 
 				{
-					cdc->amortizedCostPerClient = INT_MAX; // so that we will never select this cdc to open the new server
-				}
-				else
-				{
-					// at first, sort the unassignedCoverableClients (from less traffic to more traffic)
-					sort(cdc->unassignedCoverableClients.begin(), cdc->unassignedCoverableClients.end(), ClientComparatorByTrafficVolume);
-					
-					// the number of newly added clients if openning a new server in cdc
-					size_t addedClientCount = (cdc->unassignedCoverableClients.size() <= serverCapacity) ? cdc->unassignedCoverableClients.size() : (size_t)serverCapacity;
-					
-					double totalBandwidthCostOfAddedClients = 0;
+					double totalBandwidthCostOfAddedClients = 0;					
 					for (size_t i = 0; i < addedClientCount; i++) { totalBandwidthCostOfAddedClients += cdc->priceBandwidth * cdc->unassignedCoverableClients.at(i)->chargedTrafficVolume; }
-					
-					cdc->amortizedCostPerClient = (cdc->priceServer + totalBandwidthCostOfAddedClients) / addedClientCount;
-				}				
+
+					cdc->amortizedCostPerClient = (cdc->priceServer + totalBandwidthCostOfAddedClients) / addedClientCount; 
+				}
 			}
 
 			// assign at most (serverCapacity) unassignedCoverable clients to the dc with the lowest amortizedCostPerClient
 			auto nextDC = candidateDatacenters.front();
 			for (auto cdc : candidateDatacenters)
 			{
-				if (cdc->amortizedCostPerClient < nextDC->amortizedCostPerClient)
-				{
-					nextDC = cdc;
-				}
+				if (cdc->amortizedCostPerClient < nextDC->amortizedCostPerClient) { nextDC = cdc; }
 			}
-			int numberOfClientsToAssign = ((int)nextDC->unassignedCoverableClients.size() <= serverCapacity) ? (int)nextDC->unassignedCoverableClients.size() : (int)serverCapacity;
+			const size_t numberOfClientsToAssign = (nextDC->unassignedCoverableClients.size() <= serverCapacity) ? nextDC->unassignedCoverableClients.size() : (size_t)serverCapacity;
 			for (size_t i = 0; i < numberOfClientsToAssign; i++)
 			{
 				nextDC->unassignedCoverableClients.at(i)->assignedDatacenterID = nextDC->id;
