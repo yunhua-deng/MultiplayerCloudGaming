@@ -590,9 +590,7 @@ namespace ServerAllocationProblem
 		WriteCostWastageDelayData(STRATEGY_COUNT, SERVER_CAPACITY_LIST, SESSION_COUNT, outcomeAtAllSessions, outputDirectory, experimentSettings);
 
 		// record eligible RDatacenter count
-		string eligibleRDatacenterCountDirectory = outputDirectory + "eligibleRDatacenterCount\\";
-		_mkdir(eligibleRDatacenterCountDirectory.c_str());
-		ofstream eligibleRDatacenterCountFile(eligibleRDatacenterCountDirectory + experimentSettings + "_" + "eligibleRDatacenterCount.csv");
+		ofstream eligibleRDatacenterCountFile(outputDirectory + experimentSettings + "_" + "eligibleRDatacenterCount.csv");
 		for (auto it : eligibleRDatacenterCount)
 		{
 			eligibleRDatacenterCountFile << it << "\n";
@@ -600,9 +598,7 @@ namespace ServerAllocationProblem
 		eligibleRDatacenterCountFile.close();
 
 		// record GDatancenter		
-		/*string GDatacenterIDDirectory = outputDirectory + "GDatacenterID\\";
-		_mkdir(GDatacenterIDDirectory.c_str());
-		ofstream GDatacenterIDFile(GDatacenterIDDirectory + experimentSettings + "_" + "GDatacenterID.csv");
+		/*ofstream GDatacenterIDFile(outputDirectory + experimentSettings + "_" + "GDatacenterID.csv");
 		for (auto it : GDatacenterIDAtAllSessions)
 		{
 			GDatacenterIDFile << it << "\n";
@@ -843,9 +839,7 @@ namespace ServerAllocationProblem
 		serverCountPerDCFile.close();
 
 		// record final G datacenter
-		/*string finalGDatacenterDirectory = outputDirectory + "finalGDatacenterID\\";
-		_mkdir(finalGDatacenterDirectory.c_str());
-		ofstream finalGDatacenterFile(finalGDatacenterDirectory + experimentSettings + "_" + "finalGDatacenterID.csv");
+		/*ofstream finalGDatacenterFile(outputDirectory + experimentSettings + "_" + "finalGDatacenterID.csv");
 		for (size_t i = 0; i < finalGDatacenterAtAllSessions.size(); i++)
 		{
 			for (size_t j = 0; j < finalGDatacenterAtAllSessions.at(i).size(); j++)
@@ -860,9 +854,7 @@ namespace ServerAllocationProblem
 		finalGDatacenterFile.close();*/
 
 		// record eligible GDatacenter count
-		string elgibleGDatacenterCountDirectory = outputDirectory + "eligibleGDatacenterCount\\";
-		_mkdir(elgibleGDatacenterCountDirectory.c_str());
-		ofstream eligibleGDatacenterCountFile(elgibleGDatacenterCountDirectory + experimentSettings + "_" + "eligibleGDatacenterCount.csv");
+		ofstream eligibleGDatacenterCountFile(outputDirectory + experimentSettings + "_" + "eligibleGDatacenterCount.csv");
 		for (auto it : eligibleGDatacenterCountAtAllSessions)
 		{
 			eligibleGDatacenterCountFile << it << "\n";

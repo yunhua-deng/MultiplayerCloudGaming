@@ -2,18 +2,10 @@
 L_G = [75 150];
 L_R = [50 100];
 size = [10 50];
-y_max = [4.5 2];
+y_max = [3.5 2];
 
-set(gcf, 'Position', get(0, 'ScreenSize'));
-ax = gca;
-outerpos = ax.OuterPosition;
-ti = ax.TightInset; 
-left = outerpos(1) + ti(1);
-bottom = outerpos(2) + ti(2);
-ax_width = outerpos(3) - ti(1) - ti(3);
-ax_height = outerpos(4) - ti(2) - ti(4);
-ax.Position = [left bottom ax_width ax_height];
-
+ss = get(0, 'ScreenSize');
+set(gcf, 'Position', [ss(1) ss(2) ss(3) ss(4) * 2/3]);
 for j = 1:2
    for i = 1:2       
        file_name = sprintf('%d_%d_%d_costTotalMean', L_G(i), L_R(i), size(j));
@@ -22,8 +14,7 @@ for j = 1:2
            data_mean(1, 2:end);
            data_mean(2, 2:end);
            data_mean(3, 2:end);
-           data_mean(4, 2:end);
-           data_mean(5, 2:end)];
+           data_mean(4, 2:end)];
        
        file_name_std = sprintf('%d_%d_%d_costTotalStd', L_G(i), L_R(i), size(j));
        data_std = importdata(strcat(file_name_std, '.csv'));
@@ -31,8 +22,7 @@ for j = 1:2
            data_std(1, 2:end);
            data_std(2, 2:end);
            data_std(3, 2:end);
-           data_std(4, 2:end);
-           data_std(5, 2:end)];       
+           data_std(4, 2:end)];       
              
        subplot(2, 2, (j - 1) * 2 + i);
        bh = barwitherr(data_std, data_mean); % with standard deviation bars       
@@ -45,21 +35,21 @@ for j = 1:2
        bh(6).FaceColor = rgb('SandyBrown');
        bh(7).FaceColor = rgb('MediumPurple');
       
-       set(gca, 'XTick', [1 2 3 4 5]);
-       set(gca, 'XTickLabel', [2 4 6 8 10]);
-       set(gca, 'XLim', [0.5 5.5])
+       set(gca, 'XTick', [1 2 3 4]);
+       set(gca, 'XTickLabel', [2 4 6 8]);
+       set(gca, 'XLim', [0.5 4.5]);
        set(gca, 'YLim', [1 y_max(j)]);
 
        set(gca, 'fontsize', 14);
-       xlabel('Server capacity: k', 'FontSize', 14);
-       ylabel('Normalized cost', 'FontSize', 20);
+       xlabel('Server capacity: k', 'FontSize', 16);
+       ylabel('Normalized cost', 'FontSize', 16);
        lh = legend('RA', 'NA', 'LSP', 'LBP', 'LCP', 'LCW', 'LAC', 'Orientation', 'vertical', 'Location', 'northwest');
-       set(lh, 'FontSize', 14);       
-       title(sprintf('(L_G = %d, L_R = %d); \t (|C| = %d)', L_G(i)*2, L_R(i)*2, size(j)));
-       grid on;       
+       set(lh, 'FontSize', 12);       
+       title(sprintf('(L_G = %d, L_R = %d); (|C| = %d)', L_G(i)*2, L_R(i)*2, size(j)));
+       grid on;
     end 
 end
-saveFigure(gcf, 'cost_basic.emf');
+export_fig cost.pdf -transparent
 
 %% wastage
 L_G = [75 150];
@@ -67,16 +57,8 @@ L_R = [50 100];
 size = [10 50];
 y_max = [4 1];
 
-set(gcf, 'Position', get(0, 'ScreenSize'));
-ax = gca;
-outerpos = ax.OuterPosition;
-ti = ax.TightInset; 
-left = outerpos(1) + ti(1);
-bottom = outerpos(2) + ti(2);
-ax_width = outerpos(3) - ti(1) - ti(3);
-ax_height = outerpos(4) - ti(2) - ti(4);
-ax.Position = [left bottom ax_width ax_height];
-
+ss = get(0, 'ScreenSize');
+set(gcf, 'Position', [ss(1) ss(2) ss(3) ss(4) * 2/3]);
 for j = 1:2
    for i = 1:2              
        file_name = sprintf('%d_%d_%d_capacityWastageMean', L_G(i), L_R(i), size(j));
@@ -85,8 +67,7 @@ for j = 1:2
            data_mean(1, 2:end);
            data_mean(2, 2:end);
            data_mean(3, 2:end);
-           data_mean(4, 2:end);
-           data_mean(5, 2:end)];
+           data_mean(4, 2:end)];
        
        file_name_std = sprintf('%d_%d_%d_capacityWastageStd', L_G(i), L_R(i), size(j));
        data_std = importdata(strcat(file_name_std, '.csv'));
@@ -94,8 +75,7 @@ for j = 1:2
            data_std(1, 2:end);
            data_std(2, 2:end);
            data_std(3, 2:end);
-           data_std(4, 2:end);
-           data_std(5, 2:end)];
+           data_std(4, 2:end)];
         
        subplot(2, 2, (j - 1) * 2 + i);
        bh = barwitherr(data_std, data_mean);
@@ -108,16 +88,18 @@ for j = 1:2
        bh(6).FaceColor = rgb('SandyBrown');
        bh(7).FaceColor = rgb('MediumPurple');
       
-       set(gca, 'XTick', [1 2 3 4 5]);
-       set(gca, 'XTickLabel', [2 4 6 8 10]);
+      set(gca, 'XTick', [1 2 3 4]);
+       set(gca, 'XTickLabel', [2 4 6 8]);
+       set(gca, 'XLim', [0.5 4.5]);
        set(gca, 'YLim', [0 y_max(j)]);
 
        set(gca, 'fontsize', 14);
        xlabel('Server capacity: k', 'FontSize', 16);
-       ylabel('Capacity wastage ratio', 'FontSize', 20); 
-       lh = legend('RA', 'NA', 'LSP', 'LBP', 'LCP', 'LCW', 'LAC', 'Orientation', 'horizontal', 'Location', 'best');
+       ylabel('Capacity wastage ratio', 'FontSize', 16); 
+       lh = legend('RA', 'NA', 'LSP', 'LBP', 'LCP', 'LCW', 'LAC', 'Orientation', 'vertical', 'Location', 'northwest');
        set(lh, 'FontSize', 12); 
-       title(sprintf('(L_G = %d, L_R = %d); \t (|C| = %d)', L_G(i)*2, L_R(i)*2, size(j)));
+       title(sprintf('(L_G = %d, L_R = %d); (|C| = %d)', L_G(i)*2, L_R(i)*2, size(j)));
        grid on;
     end 
 end
+export_fig wastage.pdf -transparent
