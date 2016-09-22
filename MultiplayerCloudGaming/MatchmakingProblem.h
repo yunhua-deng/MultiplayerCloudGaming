@@ -18,10 +18,9 @@ namespace MatchmakingProblem
 		ClientType(int givenID)
 		{
 			this->id = givenID;
-		}
-	};
-	bool ClientComparatorByFewerEligibleDatacenters(const ClientType * a, const ClientType * b);
-	bool ClientComparatorByMoreEligibleDatacenters(const ClientType * a, const ClientType * b);
+		}		
+	};	
+	bool ClientComparatorByFewerEligibleDatacenters(const ClientType* a, const ClientType* b);
 	
 	struct DatacenterType
 	{
@@ -30,12 +29,37 @@ namespace MatchmakingProblem
 		double priceBandwidth; // bandwidth price per unit traffic volume (per GB)
 		map<int, double> delayToClient; // delay value mapped with client's id (fixed once initialized)	
 		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)		
-		vector<ClientType*> coverableClients;		
+		vector<ClientType*> coverableClients;
 		vector<ClientType*> assignedClients;
 
 		DatacenterType(int givenID)
 		{
 			this->id = givenID;
+		}
+	};
+
+	struct DatacenterPointerVectorCmp
+	{
+		bool operator()(const vector<DatacenterType*>& a, const vector<DatacenterType*>& b) const
+		{
+			if (a.size() > b.size()) return false;
+			else if (a.size() == b.size())
+			{
+				if (a.empty()) return false;
+				else
+				{
+					for (size_t i = 0; i < a.size(); i++)
+					{
+						if (i < (a.size() - 1))
+						{
+							if (a.at(i)->id > b.at(i)->id) return false;
+							else if (a.at(i)->id < b.at(i)->id) return true;
+						}
+						else return (a.back()->id < b.back()->id);
+					}
+				}
+			}
+			else return true;
 		}
 	};
 	
@@ -47,13 +71,13 @@ namespace MatchmakingProblem
 	protected:
 		vector<ClientType> globalClientList; // read from input
 		vector<DatacenterType> globalDatacenterList; // read from input		
-		DatacenterType* GetClientNearestDC(ClientType & client);
+		DatacenterType* GetClientNearestEligibleDC(ClientType & client);
 	};
 
 	class MaximumMatchingProblem : public MatchmakingProblemBase
 	{
 	public:		
-		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";		
+		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";
 		ofstream outFile;
 		void Simulate(const string algToRun, const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int simulationCount = 100);
 	private:
@@ -61,6 +85,7 @@ namespace MatchmakingProblem
 		vector<DatacenterType> candidateDatacenters;
 		void RandomAssignmentGrouping();
 		void NearestAssignmentGrouping();
-		void SimpleGreedyGrouping(const int sessionSize, const bool sortingClients = false, const bool sortingClientsByMoreEligibleDatacenters = false);
+		void SimpleGreedyGrouping(const int sessionSize);
+		void LayeredGreedyGrouping(const int sessionSize);
 	};
 }

@@ -1,13 +1,13 @@
 %% cost
 L_G = [75 150];
 L_R = [50 100];
-size = [10 50];
+size = [10 30 50];
 y_max = [3.5 2];
 
 ss = get(0, 'ScreenSize');
-set(gcf, 'Position', [ss(1) ss(2) ss(3) ss(4) * 2/3]);
+set(gcf, 'Position', [ss(1) ss(2) ss(3) ss(4)]);
 for j = 1:2
-   for i = 1:2       
+   for i = 1:3
        file_name = sprintf('%d_%d_%d_costTotalMean', L_G(i), L_R(i), size(j));
        data_mean = importdata(strcat(file_name, '.csv'));
        data_mean = [
@@ -24,7 +24,7 @@ for j = 1:2
            data_std(3, 2:end);
            data_std(4, 2:end)];       
              
-       subplot(2, 2, (j - 1) * 2 + i);
+       subplot(2, 3, (j - 1) * 3 + i);
        bh = barwitherr(data_std, data_mean); % with standard deviation bars       
             
        bh(1).FaceColor = rgb('FloralWhite');

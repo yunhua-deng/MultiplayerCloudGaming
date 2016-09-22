@@ -4,8 +4,7 @@ namespace MatchmakingProblem
 {
 	void MatchmakingProblemBase::Initialize()
 	{				
-		//string ClientDatacenterLatencyFile = "ping_to_pl_median_matrix.csv"; // small dataset
-		string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv"; // large dataset
+		string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv";
 		string InterDatacenterLatencyFile = "ping_to_dc_median_matrix.csv";
 		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";
 		
@@ -109,16 +108,14 @@ namespace MatchmakingProblem
 		/*stuff to record performance*/
 		vector<double> eligibleRate;
 		vector<double> groupedRate;
+		vector<double> groupingTime;
 
 		/*run simulation round by round*/		
 		for (int round = 1; round <= simulationCount; round++)
 		{	
 			/*generate candidateClients (copy from globalClientList)*/
 			candidateClients.clear();
-			while (candidateClients.size() < clientCount)
-			{
-				candidateClients.push_back(globalClientList.at(GenerateRandomIndex(globalClientList.size())));				
-			}
+			while (candidateClients.size() < clientCount) { candidateClients.push_back(globalClientList.at(GenerateRandomIndex(globalClientList.size()))); }
 
 			/*generate candidateDatacenters (copy from globalDatacenterList)*/
 			candidateDatacenters= globalDatacenterList;
@@ -135,167 +132,110 @@ namespace MatchmakingProblem
 						dc.coverableClients.push_back(&client);
 					}
 				}
-				if (!client.eligibleDatacenters.empty())
-				{
-					totalEligibleClients++;
-				}
+				if (!client.eligibleDatacenters.empty()) { totalEligibleClients++; }
 			}
 
 			/*cancel this round*/
 			if (totalEligibleClients < sessionSize)
 			{
-				printf("totalEligibleClients < sessionSize -> redo this round\n");
+				std::printf("totalEligibleClients < sessionSize -> redo this round\n");
 				round--;
 				continue;
 			}
-			else
-			{
-				eligibleRate.push_back(totalEligibleClients / clientCount);
-			}
+			else { eligibleRate.push_back(totalEligibleClients / clientCount); }
 			//printf("round=%d\n", round);
 
-			/*grouping algorithm*/
-			if ("nearest" == algToRun)
-				NearestAssignmentGrouping();
-			else if ("random" == algToRun)
-				RandomAssignmentGrouping();
-			else if ("simple" == algToRun)
-				SimpleGreedyGrouping(sessionSize);
-			else if ("simple-sort-fewer" == algToRun)
-				SimpleGreedyGrouping(sessionSize, true);
-			else if ("simple-sort-more" == algToRun)
-				SimpleGreedyGrouping(sessionSize, true, true);
-			else
-				printf("invalid algoritm name!\n");
+			/*run grouping algorithm*/
+			auto timeStart = clock();
+			if ("nearest" == algToRun) NearestAssignmentGrouping();
+			else if ("random" == algToRun) RandomAssignmentGrouping();
+			else if ("simple" == algToRun) SimpleGreedyGrouping(sessionSize);			
+			else if ("layered" == algToRun) LayeredGreedyGrouping(sessionSize);
+			else std::printf("invalid algoritm name!\n");
+			groupingTime.push_back((double)difftime(clock(), timeStart));
 				
 			/*get the result of this round*/
 			double totalGroupedClients = 0;			
-			for (auto & dc : candidateDatacenters)
-			{				
-				totalGroupedClients += std::floor((double)dc.assignedClients.size() / sessionSize) * sessionSize;
-			}			
-			groupedRate.push_back(totalGroupedClients / clientCount);			
+			for (auto & dc : candidateDatacenters) { totalGroupedClients += std::floor((double)dc.assignedClients.size() / sessionSize) * sessionSize; }
+			groupedRate.push_back(totalGroupedClients / clientCount);
 		}
 		
 		/*dump to disk*/
-		outFile << clientCount << "," << GetMeanValue(eligibleRate) << "," << GetMeanValue(groupedRate) << "\n";
-		printf("%d,%.2f,%.2f\n", clientCount, GetMeanValue(eligibleRate), GetMeanValue(groupedRate));
+		outFile << clientCount << "," << GetMeanValue(eligibleRate) << "," << GetMeanValue(groupedRate) << "," << GetMeanValue(groupingTime) << "\n";
+		std::printf("%d,%.2f,%.2f,%.2f\n", clientCount, GetMeanValue(eligibleRate), GetMeanValue(groupedRate), GetMeanValue(groupingTime));
 	}
 
 	void MaximumMatchingProblem::RandomAssignmentGrouping()
 	{
 		/*reset assignedClients*/
-		for (auto & dc : candidateDatacenters)
-		{
-			dc.assignedClients.clear();
-		}
-
+		for (auto & dc : candidateDatacenters) { dc.assignedClients.clear(); }
 		/*reset assignedDatacenter*/
-		for (auto & client : candidateClients)
-		{
-			client.assignedDatacenter = nullptr;
-		}
+		for (auto & client : candidateClients) { client.assignedDatacenter = nullptr; }
 
 		/*determine each dc's assignedClients*/
 		for (auto & client : candidateClients)
 		{
-			if (!client.eligibleDatacenters.empty())
-			{
-				client.assignedDatacenter = client.eligibleDatacenters.at(GenerateRandomIndex(client.eligibleDatacenters.size()));
-			}
-
-			if (client.assignedDatacenter != nullptr)
-			{
-				client.assignedDatacenter->assignedClients.push_back(&client);
-			}
+			if (!client.eligibleDatacenters.empty()) { client.assignedDatacenter = client.eligibleDatacenters.at(GenerateRandomIndex(client.eligibleDatacenters.size())); }
+			if (client.assignedDatacenter != nullptr) { client.assignedDatacenter->assignedClients.push_back(&client); }
 		}
 	}
 
 	void MaximumMatchingProblem::NearestAssignmentGrouping()
-	{		
+	{	
 		/*reset assignedClients*/
-		for (auto & dc : candidateDatacenters)
-		{
-			dc.assignedClients.clear();
-		}
-
+		for (auto & dc : candidateDatacenters) { dc.assignedClients.clear(); }
 		/*reset assignedDatacenter*/
-		for (auto & client : candidateClients)
-		{
-			client.assignedDatacenter = nullptr;
-		}
+		for (auto & client : candidateClients) { client.assignedDatacenter = nullptr; }
 
 		/*determine each dc's assignedClients*/
 		for (auto & client : candidateClients)
 		{			
-			if (!client.eligibleDatacenters.empty())
-			{
-				client.assignedDatacenter = GetClientNearestDC(client);
-			}
-
-			if (client.assignedDatacenter != nullptr)
-			{
-				client.assignedDatacenter->assignedClients.push_back(&client);
-			}
+			if (!client.eligibleDatacenters.empty()) client.assignedDatacenter = GetClientNearestEligibleDC(client);
+			if (client.assignedDatacenter != nullptr) { client.assignedDatacenter->assignedClients.push_back(&client); }
 		}
 	}
 
-	void MaximumMatchingProblem::SimpleGreedyGrouping(const int sessionSize, const bool sortingClients, const bool sortingClientsByMoreEligibleDatacenters)
+	void MaximumMatchingProblem::SimpleGreedyGrouping(const int sessionSize)
 	{
 		/*reset assignedClients*/
-		for (auto & dc : candidateDatacenters)
-		{
-			dc.assignedClients.clear();
-		}
-
+		for (auto & dc : candidateDatacenters) { dc.assignedClients.clear(); }
 		/*reset assignedDatacenter*/
-		for (auto & client : candidateClients)
-		{
-			client.assignedDatacenter = nullptr;
-		}
+		for (auto & client : candidateClients) { client.assignedDatacenter = nullptr; }
 
 		/*sort coverableClients for each datacenter*/
-		if (sortingClients)
+		for (auto & dc : candidateDatacenters)
 		{
-			for (auto & dc : candidateDatacenters)
-			{
-				if (sortingClientsByMoreEligibleDatacenters)
-					std::sort(dc.coverableClients.begin(), dc.coverableClients.end(), ClientComparatorByMoreEligibleDatacenters);
-				else 
-					std::sort(dc.coverableClients.begin(), dc.coverableClients.end(), ClientComparatorByFewerEligibleDatacenters);
-			}
+			std::sort(dc.coverableClients.begin(), dc.coverableClients.end(), ClientComparatorByFewerEligibleDatacenters);
 		}
 
-		/*simple datacenter-based hill-climbing greedy*/		
+		/*simple greedy*/
 		while (true)
 		{
 			/*pick the maxDC*/
 			auto maxDC = &(candidateDatacenters.front());
+			int maxRank = 0;
+			for (auto & client : maxDC->coverableClients) 
+			{ 
+				if (nullptr == client->assignedDatacenter) { maxRank++; } 
+			}
 			for (auto & dc : candidateDatacenters)
 			{
-				int rankMaxDC = 0;
-				for (auto & client : maxDC->coverableClients)
-				{
-					if (nullptr == client->assignedDatacenter) { rankMaxDC++; }
+				int thisRank = 0;
+				for (auto & client : dc.coverableClients) 
+				{ 
+					if (nullptr == client->assignedDatacenter) { thisRank++; }
 				}
 
-				int rankThisDC = 0;
-				for (auto & client : dc.coverableClients)
+				if (thisRank > maxRank)
 				{
-					if (nullptr == client->assignedDatacenter) { rankThisDC++; }
+					maxRank = thisRank;
+					maxDC = &dc; 
 				}
-
-				if (rankThisDC > rankMaxDC) { maxDC = &dc; }
 			}
 
-			double unassignedClientsInMaxDC = 0;
-			for (auto & client : maxDC->coverableClients)
-			{
-				if (nullptr == client->assignedDatacenter) { unassignedClientsInMaxDC++; }
-			}
+			/*determine how many unassigned clients to assign in this round*/
+			double unassignedClientsInMaxDC = (double)maxRank;
 			int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClientsInMaxDC / sessionSize) * sessionSize);			
-
-			/*check termination condition*/
 			if (0 == clientsToBeGroupedInMaxDC) { break; }
 
 			/*group (assign) clients in the maxDC*/		
@@ -311,12 +251,99 @@ namespace MatchmakingProblem
 						clientsToBeGroupedInMaxDC--;						
 					}
 				}
-				else { break; }
+				else break;
 			}
 		}
 	}
 
-	DatacenterType* MatchmakingProblemBase::GetClientNearestDC(ClientType & client)
+	void MaximumMatchingProblem::LayeredGreedyGrouping(const int sessionSize)
+	{
+		/*reset assignedClients*/
+		for (auto & dc : candidateDatacenters) { dc.assignedClients.clear(); }
+		/*reset assignedDatacenter*/
+		for (auto & client : candidateClients) { client.assignedDatacenter = nullptr; }
+
+		/*sort coverableClients for each dc*/
+		for (auto & dc : candidateDatacenters)
+		{
+			map<vector<DatacenterType*>, vector<ClientType*>, DatacenterPointerVectorCmp> clientSectors;
+			for (auto & c : dc.coverableClients) { clientSectors[c->eligibleDatacenters].push_back(c); }
+
+			/*cout << clientSectors.size() << " sectors\n";
+			cout << "original coverableClients: { ";
+			for (auto & c : dc.coverableClients) { cout << c->id << " "; }
+			cout << "}\n";*/
+
+			dc.coverableClients.clear();
+			for (auto & sector : clientSectors) 
+			{ 					
+				for (auto & c : sector.second) 
+				{ 
+					dc.coverableClients.push_back(c);
+
+					/*cout << c->id << ": { ";
+					for (auto & it : c->eligibleDatacenters) { cout << it->id << " "; }
+					cout << "}\n";*/
+				}
+			}
+
+			/*cout << "sorted coverableClients: { ";
+			for (auto & c : dc.coverableClients) { cout << c->id << " "; }
+			cout << "}\n";
+			cin.get();*/
+		}
+
+		/*layered greedy*/
+		for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
+		{
+			while (true)
+			{
+				/*pick the maxDC*/
+				auto maxDC = &(candidateDatacenters.front());
+				int maxRank = 0;
+				for (auto & client : maxDC->coverableClients)
+				{
+					if (nullptr == client->assignedDatacenter && client->eligibleDatacenters.size() <= layerIndex) { maxRank++; }
+				}
+				for (auto & dc : candidateDatacenters)
+				{
+					int thisRank = 0;
+					for (auto & client : dc.coverableClients)
+					{
+						if (nullptr == client->assignedDatacenter && client->eligibleDatacenters.size() <= layerIndex) { thisRank++; }
+					}
+
+					if (thisRank > maxRank)
+					{ 						
+						maxRank = thisRank;
+						maxDC = &dc;						
+					}
+				}
+
+				/*determine how many unassigned clients to assign in this round*/
+				double unassignedClientsInMaxDC = (double)maxRank;
+				int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClientsInMaxDC / sessionSize) * sessionSize);
+				if (0 == clientsToBeGroupedInMaxDC) { break; }
+
+				/*group (assign) clients in the maxDC*/
+				for (auto & client : maxDC->coverableClients)
+				{					
+					if (clientsToBeGroupedInMaxDC > 0)
+					{
+						if (nullptr == client->assignedDatacenter)
+						{
+							client->assignedDatacenter = maxDC;
+							maxDC->assignedClients.push_back(client);
+							clientsToBeGroupedInMaxDC--;
+						}
+					}
+					else break;
+				}
+			}
+		}
+	}
+
+	DatacenterType* MatchmakingProblemBase::GetClientNearestEligibleDC(ClientType & client)
 	{
 		if (client.eligibleDatacenters.empty())
 			return nullptr;
@@ -332,13 +359,8 @@ namespace MatchmakingProblem
 		return nearest;
 	}
 
-	bool ClientComparatorByFewerEligibleDatacenters(const ClientType * a, const ClientType * b)
+	bool ClientComparatorByFewerEligibleDatacenters(const ClientType* a, const ClientType* b)
 	{
-		return (a->eligibleDatacenters.size() <= b->eligibleDatacenters.size());
-	}
-
-	bool ClientComparatorByMoreEligibleDatacenters(const ClientType * a, const ClientType * b)
-	{
-		return (a->eligibleDatacenters.size() >= b->eligibleDatacenters.size());
-	}
+		return (a->eligibleDatacenters.size() < b->eligibleDatacenters.size());
+	}	
 }
