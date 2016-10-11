@@ -13,7 +13,7 @@ for i = 1:3
     title(sprintf('latencyThreshold = %d', L_T(i)));
     grid on;
     box on;
-    %pbaspect([1.5 1 1]);
+    pbaspect([1.5 1 1]);
     
     %algorithm
     for j = 1:3
@@ -40,7 +40,7 @@ for i = 1:3
         title(sprintf('latencyThreshold = %d | sessionSize = %d', L_T(i), S_S(j)));
         grid on;
         box on;
-        %pbaspect([1.5 1 1]);
+        pbaspect([1.5 1 1]);
     end
 end
 export_fig grouping_rate.pdf -transparent
@@ -60,7 +60,7 @@ for i = 1:3
     title(sprintf('latencyThreshold = %d', L_T(i)));
     grid on;
     box on;
-    %pbaspect([1.5 1 1]);
+    pbaspect([1.5 1 1]);
     
     %algorithm
     for j = 1:3
@@ -88,7 +88,7 @@ for i = 1:3
         title(sprintf('latencyThreshold = %d | sessionSize = %d', L_T(i), S_S(j)));
         grid on;
         box on;
-        %pbaspect([1.5 1 1]);
+        pbaspect([1.5 1 1]);
     end
 end
 export_fig grouping_time.pdf -transparent

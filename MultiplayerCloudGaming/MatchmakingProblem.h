@@ -12,9 +12,19 @@ namespace MatchmakingProblem
 		int id;
 		double chargedTrafficVolume;
 		map<int, double> delayToDatacenter;
+
+		/*for MaximumMatchingProblem*/
 		vector<DatacenterType*> eligibleDatacenters;
 		DatacenterType* assignedDatacenter = nullptr;
 
+		/*for ParetoOptimalMatchingProblem*/
+		vector<DatacenterType*> eligibleDatacenters_G;
+		vector<DatacenterType*> eligibleDatacenters_R;
+		map<int, vector<DatacenterType*>> eligibleDatacenters_R_indexed_by_G;
+		DatacenterType* assignedDatacenter_G = nullptr;
+		DatacenterType* assignedDatacenter_R = nullptr;
+		bool isGrouped;
+		
 		ClientType(int givenID)
 		{
 			this->id = givenID;
@@ -29,14 +39,20 @@ namespace MatchmakingProblem
 		double priceBandwidth; // bandwidth price per unit traffic volume (per GB)
 		map<int, double> delayToClient; // delay value mapped with client's id (fixed once initialized)	
 		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)		
+		
+		/*for MaximumMatchingProblem*/
 		vector<ClientType*> coverableClients;
 		vector<ClientType*> assignedClients;
 
+		/*for ParetoOptimalMatchingProblem*/
+		vector<ClientType*> assignedClients_G;
+		vector<ClientType*> assignedClients_R;
+		
 		DatacenterType(int givenID)
 		{
 			this->id = givenID;
 		}
-	};
+	};	
 
 	struct DatacenterPointerVectorCmp
 	{
@@ -71,7 +87,6 @@ namespace MatchmakingProblem
 	protected:
 		vector<ClientType> globalClientList; // read from input
 		vector<DatacenterType> globalDatacenterList; // read from input		
-		DatacenterType* GetClientNearestEligibleDC(ClientType & client);
 	};
 
 	class MaximumMatchingProblem : public MatchmakingProblemBase
@@ -83,9 +98,22 @@ namespace MatchmakingProblem
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;
+		DatacenterType* GetClientNearestEligibleDC(ClientType & client);
 		void RandomAssignmentGrouping();
 		void NearestAssignmentGrouping();
 		void SimpleGreedyGrouping(const int sessionSize);
 		void LayeredGreedyGrouping(const int sessionSize);
+	};
+
+	class ParetoOptimalMatchingProblem : public MatchmakingProblemBase
+	{
+	public:
+		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";
+		ofstream outFile;
+		void Simulate(const string algToRun, const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int simulationCount = 100);
+	private:
+		vector<ClientType> candidateClients;
+		vector<DatacenterType> candidateDatacenters;
+		void RandomAssignmentGrouping(const int sessionSize);
 	};
 }

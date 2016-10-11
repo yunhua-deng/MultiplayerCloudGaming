@@ -179,17 +179,13 @@ namespace ServerAllocationProblem
 	{
 		double costServer = 0, costBandwidth = 0, numberServers = 0;
 		for (auto dc : allDatacenters)
-		{
-			//dc->openServerCount = ceil(dc->assignedClientList.size() / serverCapacity);
-			dc->openServerCount = ceil(double(dc->assignedClients.size()) / serverCapacity);
-			numberServers += dc->openServerCount;
+		{			
+			dc->openServerCount = ceil(double(dc->assignedClients.size()) / serverCapacity);			
 			costServer += dc->priceServer * dc->openServerCount;
 			double totalChargedTrafficVolume = 0;
-			for (auto client : dc->assignedClients)
-			{
-				totalChargedTrafficVolume += client->chargedTrafficVolume;
-			}
+			for (auto client : dc->assignedClients) { totalChargedTrafficVolume += client->chargedTrafficVolume; }
 			costBandwidth += dc->priceBandwidth * totalChargedTrafficVolume;
+			numberServers += dc->openServerCount;
 		}
 
 		double totalDelay = 0;
@@ -235,7 +231,7 @@ namespace ServerAllocationProblem
 		
 	bool ClientComparatorByTrafficVolume(const ClientType * A, const ClientType * B)
 	{
-		return (A->chargedTrafficVolume <= B->chargedTrafficVolume);
+		return (A->chargedTrafficVolume < B->chargedTrafficVolume);
 	}
 
 	bool Initialize(string dataDirectory, vector<ClientType*> &allClients, vector<DatacenterType*> &allDatacenters)
@@ -482,10 +478,10 @@ namespace ServerAllocationProblem
 		vector<double> matchmakingTimeAtAllSessions;
 		
 		vector<int> sessionCompositionAtAllSessions;
-		map<int, int> detailedSessionCompositionAtAllSessions;
-		for (int i = 0; i < allDatacenters.size(); i++) { detailedSessionCompositionAtAllSessions[i] = 0; }
+		map<int, int> sessionCompositionStatisticsAtAllSessions;
+		for (int i = 0; i < allDatacenters.size(); i++) { sessionCompositionStatisticsAtAllSessions[i] = 0; }
 
-		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8, 10 };
+		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8 };
 		int STRATEGY_COUNT = 8;
 
 		for (int sessionID = 1; sessionID <= SESSION_COUNT; sessionID++)
@@ -494,7 +490,7 @@ namespace ServerAllocationProblem
 			int GDatacenterID;
 			auto matchmakingStartTime = clock();			
 			bool isFeasibleSession = Matchmaking4BasicProblem(allDatacenters, allClients, GDatacenterID, sessionClients, SESSION_SIZE, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
-			for (auto client : sessionClients) { client->chargedTrafficVolume = double(1 + (rand() % 5)); } // each client may have a trafficVolume in the range [1, 5]			
+			for (auto client : sessionClients) { client->chargedTrafficVolume = 1 + (rand() % 5); } // each client may have a trafficVolume in the range [1, 5]
 			matchmakingTimeAtAllSessions.push_back(difftime(clock(), matchmakingStartTime));
 			if (!isFeasibleSession)
 			{
@@ -511,7 +507,7 @@ namespace ServerAllocationProblem
 			for (auto client : sessionClients) 
 			{ 
 				sessionComposition.insert(client->nearestDatacenterID); 
-				detailedSessionCompositionAtAllSessions.at(client->nearestDatacenterID)++;
+				sessionCompositionStatisticsAtAllSessions.at(client->nearestDatacenterID)++;
 			}
 			sessionCompositionAtAllSessions.push_back((int)sessionComposition.size());
 
@@ -555,12 +551,12 @@ namespace ServerAllocationProblem
 						outcome = Alg_LCW(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
 						break;
 					case 8:
-						outcome = Alg_LAC(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
-						break;					
+						outcome = Alg_LAC_2(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
+						break;
 					default:
 						outcome = tuple<double, double, double, double, double>(0, 0, 0, 0, 0);
 						break;
-					}		
+					}
 					computationAtOneCapacity.push_back((double)(clock() - timePoint)); // record computation time per strategy
 					outcomeAtOneCapacity.push_back(outcome); // record outcome per strategy
 
@@ -602,18 +598,18 @@ namespace ServerAllocationProblem
 		outFile.close();
 
 		// record session composition
-		outFile = ofstream(outputDirectory + experimentSettings + "_" + "sessionComposition.csv");
+		/*outFile = ofstream(outputDirectory + experimentSettings + "_" + "sessionComposition.csv");
 		for (auto it : sessionCompositionAtAllSessions)
 		{
 			outFile << it << ",";
 		}
 		outFile.close();
-		outFile = ofstream(outputDirectory + experimentSettings + "_" + "sessionCompositionDetailed.csv");
-		for (auto it : detailedSessionCompositionAtAllSessions)
+		outFile = ofstream(outputDirectory + experimentSettings + "_" + "sessionCompositionStatistics.csv");
+		for (auto it : sessionCompositionStatisticsAtAllSessions)
 		{
 			outFile << it.second << ",";
 		}
-		outFile.close();
+		outFile.close();*/
 
 		// record GDatancenter		
 		/*outFile = ofstream(outputDirectory + experimentSettings + "_" + "GDatacenterID.csv");
@@ -706,7 +702,7 @@ namespace ServerAllocationProblem
 			serverCountPerDC4LAC[dc->id] = 0;
 		}
 
-		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8, 10 };
+		vector<double> SERVER_CAPACITY_LIST = { 2, 4, 6, 8 };
 		int STRATEGY_COUNT = 8;
 
 		for (int sessionID = 1; sessionID <= SESSION_COUNT; sessionID++)
@@ -784,7 +780,7 @@ namespace ServerAllocationProblem
 						}*/
 						break;
 					case 8:
-						outcome = Alg_LAC(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
+						outcome = Alg_LAC_2(eligibleGDatacenters, finalGDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R, serverCapacity);
 						/*if (8 == serverCapacity)
 						{
 							for (auto dc : allDatacenters)
@@ -1476,7 +1472,7 @@ namespace ServerAllocationProblem
 
 		ResetAssignment(sessionClients, allDatacenters);
 				
-		for (auto dc : allDatacenters) { sort(dc->coverableClients.begin(), dc->coverableClients.end(), ClientComparatorByTrafficVolume); }
+		for (auto dc : allDatacenters) { sort(dc->coverableClients.begin(), dc->coverableClients.end(), ClientComparatorByTrafficVolume); }		
 
 		while (true)
 		{
@@ -1521,7 +1517,7 @@ namespace ServerAllocationProblem
 			}
 		}
 
-		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);
+		return GetSolutionOutput(allDatacenters, serverCapacity, sessionClients, GDatacenterID);		
 	}
 
 	tuple<double, double, double, double, double> Alg_LAC(
@@ -1563,6 +1559,165 @@ namespace ServerAllocationProblem
 		finalGDatacenter = tempFinalGDatacenter;
 
 		for (auto dc : allDatacenters) 
+		{
+			dc->openServerCount = finalServerCountPerDC[dc->id];
+		}
+
+		return finalOutcome;
+	}
+
+	tuple<double, double, double, double, double> Alg_LAC_2(
+		const vector<ClientType*> &sessionClients,
+		const vector<DatacenterType*> &allDatacenters,
+		double serverCapacity,
+		int GDatacenterID)
+	{
+		if (serverCapacity < 2)	return Alg_LCP(sessionClients, allDatacenters, serverCapacity, GDatacenterID);
+
+		ResetAssignment(sessionClients, allDatacenters);
+
+		for (auto dc : allDatacenters) { sort(dc->coverableClients.begin(), dc->coverableClients.end(), ClientComparatorByTrafficVolume); }
+
+		for (auto dc : allDatacenters) { dc->openServerCount = 0; }
+
+		// at each iteration, a new server will be opened at a specific DC
+		while (true)
+		{
+			// prepare for this iteration
+			vector<DatacenterType*> candidateDatacenters;
+			for (auto dc : allDatacenters)
+			{
+				dc->unassignedCoverableClients.clear();
+				for (auto client : dc->coverableClients) { if (client->assignedDatacenterID < 0) dc->unassignedCoverableClients.push_back(client); }
+
+				if (!dc->unassignedCoverableClients.empty()) { candidateDatacenters.push_back(dc); }
+			}
+
+			// no unassigned clients at all, so terminate the loop
+			if (candidateDatacenters.empty()) { break; }
+
+			// compute the minimum amortized cost per client for each cdc if opening a new server in it
+			for (auto cdc : candidateDatacenters)
+			{
+				const size_t maxAddedClientCount = (cdc->unassignedCoverableClients.size() <= serverCapacity) ? cdc->unassignedCoverableClients.size() : (size_t)serverCapacity;
+				if (0 == maxAddedClientCount) { cdc->amortizedCostPerClient = INT_MAX; } // double-check
+				else
+				{
+					// compute the best addedClientCount and the corresponding amortized cost
+					cdc->amortizedCostPerClient = INT_MAX;
+					cdc->addedClientCount = maxAddedClientCount;
+					for (size_t addedClientCountTemp = 1; addedClientCountTemp <= maxAddedClientCount; addedClientCountTemp++)
+					{
+						double totalBandwidthCostOfAddedClients = 0;
+						for (size_t i = 0; i < addedClientCountTemp; i++)
+						{
+							totalBandwidthCostOfAddedClients += cdc->priceBandwidth * cdc->unassignedCoverableClients.at(i)->chargedTrafficVolume;
+						}
+						double temp = (cdc->priceServer + totalBandwidthCostOfAddedClients) / addedClientCountTemp;
+						if (temp < cdc->amortizedCostPerClient)
+						{
+							cdc->amortizedCostPerClient = temp;
+							cdc->addedClientCount = addedClientCountTemp;
+						}
+					}
+				}
+			}
+
+			// choose the cdc with the lowest minimum amortizedCostPerClient
+			auto nextDC = candidateDatacenters.front();
+			for (auto cdc : candidateDatacenters)
+			{
+				if (cdc->amortizedCostPerClient < nextDC->amortizedCostPerClient) { nextDC = cdc; }
+			}
+
+			// assign addedClientCount clients
+			for (size_t i = 0; i < nextDC->addedClientCount; i++)
+			{
+				nextDC->unassignedCoverableClients.at(i)->assignedDatacenterID = nextDC->id;
+				nextDC->assignedClients.push_back(nextDC->unassignedCoverableClients.at(i));
+			}
+
+			// open a new server at nextDC
+			nextDC->openServerCount++;
+		}
+
+		// post-processing
+		for (auto dc : allDatacenters)
+		{			
+			while ((serverCapacity * dc->openServerCount - dc->assignedClients.size()) >= serverCapacity)
+			{
+				printf("\npost-processing\n");
+				dc->openServerCount--;
+			}
+		}
+
+		// output
+		double costServer = 0, costBandwidth = 0, numberServers = 0;
+		for (auto dc : allDatacenters)
+		{
+			costServer += dc->priceServer * dc->openServerCount;
+			double totalChargedTrafficVolume = 0;
+			for (auto client : dc->assignedClients)
+			{
+				totalChargedTrafficVolume += client->chargedTrafficVolume;
+			}
+			costBandwidth += dc->priceBandwidth * totalChargedTrafficVolume;
+			numberServers += dc->openServerCount;
+		}
+
+		double totalDelay = 0;
+		for (auto client : sessionClients)
+		{
+			totalDelay += client->delayToDatacenter[client->assignedDatacenterID] + allDatacenters.at(client->assignedDatacenterID)->delayToDatacenter[GDatacenterID];
+		}
+
+		return tuple<double, double, double, double, double>(
+			costServer + costBandwidth,
+			costServer,
+			costBandwidth,
+			(numberServers * serverCapacity - sessionClients.size()) / sessionClients.size(),
+			totalDelay / sessionClients.size());
+	}
+
+	tuple<double, double, double, double, double> Alg_LAC_2(
+		vector<DatacenterType*> eligibleGDatacenters,
+		int &finalGDatacenter,
+		const vector<ClientType*> &sessionClients,
+		const vector<DatacenterType*> &allDatacenters,
+		double DELAY_BOUND_TO_G,
+		double DELAY_BOUND_TO_R,
+		double serverCapacity)
+	{
+		tuple<double, double, double, double, double> finalOutcome;
+		double totalCost = INT_MAX;
+		int tempFinalGDatacenter = eligibleGDatacenters.front()->id;
+
+		map<int, double> finalServerCountPerDC;
+
+		for (auto GDatacenter : eligibleGDatacenters)
+		{
+			SimulationSetup4GeneralProblem(GDatacenter, sessionClients, allDatacenters, DELAY_BOUND_TO_G, DELAY_BOUND_TO_R);
+			auto tempOutcome = Alg_LAC_2(sessionClients, allDatacenters, serverCapacity, GDatacenter->id);
+			double tempTotalCost = get<0>(tempOutcome);
+
+			map<int, double> tempServerCountPerDC;
+			for (auto dc : allDatacenters)
+			{
+				tempServerCountPerDC[dc->id] = dc->openServerCount;
+			}
+
+			if (tempTotalCost < totalCost) // choose the smaller cost
+			{
+				totalCost = tempTotalCost;
+				finalOutcome = tempOutcome;
+				tempFinalGDatacenter = GDatacenter->id;
+				finalServerCountPerDC = tempServerCountPerDC;
+			}
+		}
+
+		finalGDatacenter = tempFinalGDatacenter;
+
+		for (auto dc : allDatacenters)
 		{
 			dc->openServerCount = finalServerCountPerDC[dc->id];
 		}

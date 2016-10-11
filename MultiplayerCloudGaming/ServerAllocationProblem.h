@@ -33,8 +33,9 @@ namespace ServerAllocationProblem
 		vector<ClientType*> coverableClients; // alternative way to access its coverable clients		
 		vector<ClientType*> assignedClients;
 		double openServerCount;
-		vector<ClientType*> unassignedCoverableClients; // to be used by some algorithms
-		double amortizedCostPerClient; // to be used by some algorithms
+		vector<ClientType*> unassignedCoverableClients;
+		double amortizedCostPerClient;
+		size_t addedClientCount;
 
 		DatacenterType(int givenID)
 		{
@@ -75,5 +76,7 @@ namespace ServerAllocationProblem
 	tuple<double, double, double, double, double> Alg_LCW(const vector<ClientType*> &, const vector<DatacenterType*> &, double, int);
 	tuple<double, double, double, double, double> Alg_LCW(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double);
 	tuple<double, double, double, double, double> Alg_LAC(const vector<ClientType*> &, const vector<DatacenterType*> &, double, int);
-	tuple<double, double, double, double, double> Alg_LAC(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double);
+	tuple<double, double, double, double, double> Alg_LAC(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double);	
+	tuple<double, double, double, double, double> Alg_LAC_2(const vector<ClientType*> &, const vector<DatacenterType*> &, double, int);
+	tuple<double, double, double, double, double> Alg_LAC_2(vector<DatacenterType*>, int &, const vector<ClientType*> &, const vector<DatacenterType*> &, double, double, double);
 }
