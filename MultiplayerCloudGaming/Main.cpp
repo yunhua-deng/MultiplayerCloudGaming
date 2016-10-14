@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	/*ParetoOptimalMatchingProblem*/
 	auto simulator = MatchmakingProblem::ParetoOptimalMatchingProblem();
 	simulator.Initialize(); // initialize once
-	simulator.Simulate("", 100, 100, 10, 1);
+	simulator.Simulate("", 1000, 100, 10, 1);
 
 	return 0;
 }
