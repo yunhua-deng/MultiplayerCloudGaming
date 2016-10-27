@@ -118,5 +118,6 @@ namespace MatchmakingProblem
 		vector<DatacenterType> candidateDatacenters; // not a subset of globalDatacenterList but a copy of it
 		void RandomAssignmentGrouping(const int sessionSize);
 		void RGreedyGrouping(const int sessionSize);
+		void UniversalGreedyGrouping(const int sessionSize);
 	};
 }

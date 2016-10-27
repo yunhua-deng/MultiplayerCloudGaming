@@ -426,6 +426,7 @@ namespace MatchmakingProblem
 			/*run grouping algorithm*/
 			if ("random" == algToRun) RandomAssignmentGrouping(sessionSize);
 			else if ("r-greedy" == algToRun) RGreedyGrouping(sessionSize);
+			else if ("u-greedy" == algToRun) UniversalGreedyGrouping(sessionSize);
 		}
 	}
 
@@ -439,18 +440,15 @@ namespace MatchmakingProblem
 			client.isGrouped = false;
 		}
 		
-		/*determine assignedDatacenter_G for each client*/
-		cout << "\n";
+		/*determine assignedDatacenter_G for each client*/		
 		for (auto & client : candidateClients)
 		{			
 			if (!client.eligibleDatacenters_G.empty())
 			{
 				auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());				
-				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);
-				cout << client.assignedDatacenter_G->id << " ";			
+				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);					
 			}
 		}
-		cout << "\n";		
 
 		/*determine assignedDatacenter_R for each client*/		
 		for (auto & client : candidateClients)
@@ -520,10 +518,7 @@ namespace MatchmakingProblem
 	}
 
 	void ParetoOptimalMatchingProblem::RGreedyGrouping(const int sessionSize)
-	{		
-		/*fix the seed for random numnber generation for every algorithm*/
-		//srand(1234);
-		
+	{						
 		/*reset*/
 		for (auto & client : candidateClients)
 		{
@@ -532,18 +527,15 @@ namespace MatchmakingProblem
 			client.isGrouped = false;
 		}
 
-		/*determine assignedDatacenter_G for each client*/
-		cout << "\n";
+		/*determine assignedDatacenter_G for each client*/		
 		for (auto & client : candidateClients)
 		{
 			if (!client.eligibleDatacenters_G.empty())
 			{
 				auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());				
-				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);
-				cout << client.assignedDatacenter_G->id << " ";
+				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);				
 			}
-		}
-		cout << "\n";
+		}		
 
 		/*determine assignedDatacenter_R for each client*/		
 		for (auto & client : candidateClients)
@@ -580,6 +572,105 @@ namespace MatchmakingProblem
 						continue; // ignore this client (skip the rest of this iteration) and proceed to next iteration
 
 					/*check if a new sesson is found and record stuff accordingly*/
+					if (oneSession.size() == sessionSize)
+					{
+						for (auto & sessionClient : oneSession)
+						{
+							oneCost += sessionClient->assignedDatacenter_R->priceServer; /*capacity is one*/
+						}
+						if (totalCost.empty()) totalCost.push_back(oneCost);
+						else totalCost.push_back(oneCost + totalCost.at(totalCost.size() - 1));
+						totalSessions.push_back(oneSession);
+						for (auto & sessionClient : oneSession)
+						{
+							sessionClient->isGrouped = true; /*update client's grouping state*/
+						}
+						newSessionFound = true;
+						break; /*stop as a new session is found*/
+					}
+
+					/*keep considering this new client if it is satisfied*/
+					if (!client.isGrouped && client.assignedDatacenter_G->id == dc_g.id)
+					{
+						oneSession.push_back(&client);
+					}
+				}
+				if (newSessionFound)
+				{
+					noMoreNewSessions = false;
+					break; /*stop as a new session is found*/
+				}
+			}
+			if (noMoreNewSessions)
+			{
+				break;
+			}
+
+			printf("%d,%.2f\n", (int)totalSessions.size(), totalCost.back());
+		}
+	}
+
+	void ParetoOptimalMatchingProblem::UniversalGreedyGrouping(const int sessionSize)
+	{
+		/*reset*/
+		for (auto & client : candidateClients)
+		{
+			client.assignedDatacenter_G = nullptr;
+			client.assignedDatacenter_R = nullptr;
+			client.isGrouped = false;
+		}		
+
+		/*determine assignedDatacenter_R for each client*/
+		for (auto & client : candidateClients)
+		{
+			if (!client.eligibleDatacenters_G.empty())
+			{
+				client.assignedDatacenter_R = client.eligibleDatacenters_R.front();
+				for (auto & d_r : client.eligibleDatacenters_R)
+				{
+					if (d_r->priceServer < client.assignedDatacenter_R->priceServer)
+					{
+						client.assignedDatacenter_R = d_r;
+					}
+				}
+			}
+		}
+
+		/*determine assignedDatacenter_G for each client*/		
+		for (auto & client : candidateClients)
+		{			
+			if (!client.eligibleDatacenters_G.empty())
+			{
+				for (auto & d_g : client.eligibleDatacenters_G)
+				{
+					if (client.eligibleDatacenters_R_indexed_by_G.at(d_g->id).end() != std::find(client.eligibleDatacenters_R_indexed_by_G.at(d_g->id).begin(), client.eligibleDatacenters_R_indexed_by_G.at(d_g->id).end(), client.assignedDatacenter_R))
+					{
+						client.assignedDatacenter_G = d_g;						
+						break;
+					}
+				}
+			}
+		}
+
+		/*grouping*/
+		printf("sessionCount,totalCost\n");
+		vector<double> totalCost;
+		vector<vector<ClientType*>> totalSessions;
+		while (true)
+		{
+			double oneCost = 0;
+			vector<ClientType*> oneSession;
+			bool noMoreNewSessions = true;
+			for (auto & dc_g : candidateDatacenters)
+			{
+				bool newSessionFound = false;
+				oneSession.clear();
+				for (auto & client : candidateClients)
+				{
+					if (client.eligibleDatacenters_G.empty())
+						continue; // ignore this client (skip the rest of this iteration) and proceed to next iteration
+
+								  /*check if a new sesson is found and record stuff accordingly*/
 					if (oneSession.size() == sessionSize)
 					{
 						for (auto & sessionClient : oneSession)
