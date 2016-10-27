@@ -110,10 +110,13 @@ namespace MatchmakingProblem
 	public:
 		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";
 		ofstream outFile;
-		void Simulate(const string algToRun, const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int simulationCount = 100);
+		void FindEligibleClients(const int latencyThreshold = 100);
+		void Simulate(const string algToRun, const int clientCount = 100, const int sessionSize = 10, const int simulationCount = 100);
 	private:
-		vector<ClientType> candidateClients;
-		vector<DatacenterType> candidateDatacenters;
+		vector<ClientType> eligibleClients; // subset of globalClientList
+		vector<ClientType> candidateClients; // subset of eligibleClients
+		vector<DatacenterType> candidateDatacenters; // not a subset of globalDatacenterList but a copy of it
 		void RandomAssignmentGrouping(const int sessionSize);
+		void RGreedyGrouping(const int sessionSize);
 	};
 }
