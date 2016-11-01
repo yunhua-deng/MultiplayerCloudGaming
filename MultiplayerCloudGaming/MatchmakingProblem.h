@@ -52,7 +52,8 @@ namespace MatchmakingProblem
 		{
 			this->id = givenID;
 		}
-	};	
+	};
+	bool DatacenterComparatorByPrice(const DatacenterType a, const DatacenterType b);
 
 	struct DatacenterPointerVectorCmp
 	{
@@ -116,8 +117,9 @@ namespace MatchmakingProblem
 		vector<ClientType> eligibleClients; // subset of globalClientList
 		vector<ClientType> candidateClients; // subset of eligibleClients
 		vector<DatacenterType> candidateDatacenters; // not a subset of globalDatacenterList but a copy of it
-		void RandomAssignmentGrouping(const int sessionSize);
-		void RGreedyGrouping(const int sessionSize);
-		void UniversalGreedyGrouping(const int sessionSize);
+		void Random(const int sessionSize);
+		void Greedy_1(const int sessionSize);
+		void Greedy_2(const int sessionSize);
+		void Greedy_3(const int sessionSize);
 	};
 }
