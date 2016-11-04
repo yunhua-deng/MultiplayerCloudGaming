@@ -128,11 +128,11 @@ namespace MatchmakingProblem
 				{
 					if (client.delayToDatacenter.at(dc.id) <= latencyThreshold)
 					{
-						client.eligibleDatacenters.push_back(&dc);
-						dc.coverableClients.push_back(&client);
+						client.eligibleDatacenters_G.push_back(&dc);
+						dc.coverableClients_G.push_back(&client);
 					}
 				}
-				if (!client.eligibleDatacenters.empty()) { totalEligibleClients++; }
+				if (!client.eligibleDatacenters_G.empty()) { totalEligibleClients++; }
 			}
 
 			/*cancel this round*/
@@ -156,7 +156,7 @@ namespace MatchmakingProblem
 				
 			/*get the result of this round*/
 			double totalGroupedClients = 0;			
-			for (auto & dc : candidateDatacenters) { totalGroupedClients += std::floor((double)dc.assignedClients.size() / sessionSize) * sessionSize; }
+			for (auto & dc : candidateDatacenters) { totalGroupedClients += std::floor((double)dc.assignedClients_G.size() / sessionSize) * sessionSize; }
 			groupedRate.push_back(totalGroupedClients / clientCount);
 		}
 		
@@ -167,45 +167,45 @@ namespace MatchmakingProblem
 
 	void MaximumMatchingProblem::RandomAssignmentGrouping()
 	{
-		/*reset assignedClients*/
-		for (auto & dc : candidateDatacenters) { dc.assignedClients.clear(); }
-		/*reset assignedDatacenter*/
-		for (auto & client : candidateClients) { client.assignedDatacenter = nullptr; }
+		/*reset assignedClients_G*/
+		for (auto & dc : candidateDatacenters) { dc.assignedClients_G.clear(); }
+		/*reset assignedDatacenter_G*/
+		for (auto & client : candidateClients) { client.assignedDatacenter_G = nullptr; }
 
-		/*determine each dc's assignedClients*/
+		/*determine each dc's assignedClients_G*/
 		for (auto & client : candidateClients)
 		{
-			if (!client.eligibleDatacenters.empty()) { client.assignedDatacenter = client.eligibleDatacenters.at(GenerateRandomIndex(client.eligibleDatacenters.size())); }
-			if (client.assignedDatacenter != nullptr) { client.assignedDatacenter->assignedClients.push_back(&client); }
+			if (!client.eligibleDatacenters_G.empty()) { client.assignedDatacenter_G = client.eligibleDatacenters_G.at(GenerateRandomIndex(client.eligibleDatacenters_G.size())); }
+			if (client.assignedDatacenter_G != nullptr) { client.assignedDatacenter_G->assignedClients_G.push_back(&client); }
 		}
 	}
 
 	void MaximumMatchingProblem::NearestAssignmentGrouping()
 	{	
-		/*reset assignedClients*/
-		for (auto & dc : candidateDatacenters) { dc.assignedClients.clear(); }
-		/*reset assignedDatacenter*/
-		for (auto & client : candidateClients) { client.assignedDatacenter = nullptr; }
+		/*reset assignedClients_G*/
+		for (auto & dc : candidateDatacenters) { dc.assignedClients_G.clear(); }
+		/*reset assignedDatacenter_G*/
+		for (auto & client : candidateClients) { client.assignedDatacenter_G = nullptr; }
 
-		/*determine each dc's assignedClients*/
+		/*determine each dc's assignedClients_G*/
 		for (auto & client : candidateClients)
 		{			
-			if (!client.eligibleDatacenters.empty()) client.assignedDatacenter = GetClientNearestEligibleDC(client);
-			if (client.assignedDatacenter != nullptr) { client.assignedDatacenter->assignedClients.push_back(&client); }
+			if (!client.eligibleDatacenters_G.empty()) client.assignedDatacenter_G = GetClientNearestEligibleDC(client);
+			if (client.assignedDatacenter_G != nullptr) { client.assignedDatacenter_G->assignedClients_G.push_back(&client); }
 		}
 	}
 
 	void MaximumMatchingProblem::SimpleGreedyGrouping(const int sessionSize)
 	{
-		/*reset assignedClients*/
-		for (auto & dc : candidateDatacenters) { dc.assignedClients.clear(); }
-		/*reset assignedDatacenter*/
-		for (auto & client : candidateClients) { client.assignedDatacenter = nullptr; }
+		/*reset assignedClients_G*/
+		for (auto & dc : candidateDatacenters) { dc.assignedClients_G.clear(); }
+		/*reset assignedDatacenter_G*/
+		for (auto & client : candidateClients) { client.assignedDatacenter_G = nullptr; }
 
-		/*sort coverableClients for each datacenter*/
+		/*sort coverableClients_G for each datacenter*/
 		for (auto & dc : candidateDatacenters)
 		{
-			std::sort(dc.coverableClients.begin(), dc.coverableClients.end(), ClientComparatorByFewerEligibleDatacenters);
+			std::sort(dc.coverableClients_G.begin(), dc.coverableClients_G.end(), ClientComparatorByFewerEligibleDatacenters_G);
 		}
 
 		/*simple greedy*/
@@ -214,16 +214,16 @@ namespace MatchmakingProblem
 			/*pick the maxDC*/
 			auto maxDC = &(candidateDatacenters.front());
 			int maxRank = 0;
-			for (auto & client : maxDC->coverableClients) 
+			for (auto & client : maxDC->coverableClients_G) 
 			{ 
-				if (nullptr == client->assignedDatacenter) { maxRank++; } 
+				if (nullptr == client->assignedDatacenter_G) { maxRank++; } 
 			}
 			for (auto & dc : candidateDatacenters)
 			{
 				int thisRank = 0;
-				for (auto & client : dc.coverableClients) 
+				for (auto & client : dc.coverableClients_G) 
 				{ 
-					if (nullptr == client->assignedDatacenter) { thisRank++; }
+					if (nullptr == client->assignedDatacenter_G) { thisRank++; }
 				}
 
 				if (thisRank > maxRank)
@@ -234,20 +234,20 @@ namespace MatchmakingProblem
 			}
 
 			/*determine how many unassigned clients to assign in this round*/
-			double unassignedClientsInMaxDC = (double)maxRank;
-			int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClientsInMaxDC / sessionSize) * sessionSize);			
+			double unassignedClients_GInMaxDC = (double)maxRank;
+			int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_GInMaxDC / sessionSize) * sessionSize);			
 			if (0 == clientsToBeGroupedInMaxDC) { break; }
 
 			/*group (assign) clients in the maxDC*/		
-			for (auto client : maxDC->coverableClients)
+			for (auto client : maxDC->coverableClients_G)
 			{				
 				/*group (assign) one not-yet-grouped client*/
 				if (clientsToBeGroupedInMaxDC > 0)
 				{
-					if (nullptr == client->assignedDatacenter)
+					if (nullptr == client->assignedDatacenter_G)
 					{
-						client->assignedDatacenter = maxDC;
-						maxDC->assignedClients.push_back(client);
+						client->assignedDatacenter_G = maxDC;
+						maxDC->assignedClients_G.push_back(client);
 						clientsToBeGroupedInMaxDC--;						
 					}
 				}
@@ -258,37 +258,37 @@ namespace MatchmakingProblem
 
 	void MaximumMatchingProblem::LayeredGreedyGrouping(const int sessionSize)
 	{
-		/*reset assignedClients*/
-		for (auto & dc : candidateDatacenters) { dc.assignedClients.clear(); }
-		/*reset assignedDatacenter*/
-		for (auto & client : candidateClients) { client.assignedDatacenter = nullptr; }
+		/*reset assignedClients_G*/
+		for (auto & dc : candidateDatacenters) { dc.assignedClients_G.clear(); }
+		/*reset assignedDatacenter_G*/
+		for (auto & client : candidateClients) { client.assignedDatacenter_G = nullptr; }
 
-		/*sort coverableClients for each dc*/
+		/*sort coverableClients_G for each dc*/
 		for (auto & dc : candidateDatacenters)
 		{
 			map<vector<DatacenterType*>, vector<ClientType*>, DatacenterPointerVectorCmp> clientSectors;
-			for (auto & c : dc.coverableClients) { clientSectors[c->eligibleDatacenters].push_back(c); }
+			for (auto & c : dc.coverableClients_G) { clientSectors[c->eligibleDatacenters_G].push_back(c); }
 
 			/*cout << clientSectors.size() << " sectors\n";
-			cout << "original coverableClients: { ";
-			for (auto & c : dc.coverableClients) { cout << c->id << " "; }
+			cout << "original coverableClients_G: { ";
+			for (auto & c : dc.coverableClients_G) { cout << c->id << " "; }
 			cout << "}\n";*/
 
-			dc.coverableClients.clear();
+			dc.coverableClients_G.clear();
 			for (auto & sector : clientSectors) 
 			{ 					
 				for (auto & c : sector.second) 
 				{ 
-					dc.coverableClients.push_back(c);
+					dc.coverableClients_G.push_back(c);
 
 					/*cout << c->id << ": { ";
-					for (auto & it : c->eligibleDatacenters) { cout << it->id << " "; }
+					for (auto & it : c->eligibleDatacenters_G) { cout << it->id << " "; }
 					cout << "}\n";*/
 				}
 			}
 
-			/*cout << "sorted coverableClients: { ";
-			for (auto & c : dc.coverableClients) { cout << c->id << " "; }
+			/*cout << "sorted coverableClients_G: { ";
+			for (auto & c : dc.coverableClients_G) { cout << c->id << " "; }
 			cout << "}\n";
 			cin.get();*/
 		}
@@ -301,16 +301,16 @@ namespace MatchmakingProblem
 				/*pick the maxDC*/
 				auto maxDC = &(candidateDatacenters.front());
 				int maxRank = 0;
-				for (auto & client : maxDC->coverableClients)
+				for (auto & client : maxDC->coverableClients_G)
 				{
-					if (nullptr == client->assignedDatacenter && client->eligibleDatacenters.size() <= layerIndex) { maxRank++; }
+					if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G.size() <= layerIndex) { maxRank++; }
 				}
 				for (auto & dc : candidateDatacenters)
 				{
 					int thisRank = 0;
-					for (auto & client : dc.coverableClients)
+					for (auto & client : dc.coverableClients_G)
 					{
-						if (nullptr == client->assignedDatacenter && client->eligibleDatacenters.size() <= layerIndex) { thisRank++; }
+						if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G.size() <= layerIndex) { thisRank++; }
 					}
 
 					if (thisRank > maxRank)
@@ -321,19 +321,19 @@ namespace MatchmakingProblem
 				}
 
 				/*determine how many unassigned clients to assign in this round*/
-				double unassignedClientsInMaxDC = (double)maxRank;
-				int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClientsInMaxDC / sessionSize) * sessionSize);
+				double unassignedClients_GInMaxDC = (double)maxRank;
+				int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_GInMaxDC / sessionSize) * sessionSize);
 				if (0 == clientsToBeGroupedInMaxDC) { break; }
 
 				/*group (assign) clients in the maxDC*/
-				for (auto & client : maxDC->coverableClients)
+				for (auto & client : maxDC->coverableClients_G)
 				{					
 					if (clientsToBeGroupedInMaxDC > 0)
 					{
-						if (nullptr == client->assignedDatacenter)
+						if (nullptr == client->assignedDatacenter_G)
 						{
-							client->assignedDatacenter = maxDC;
-							maxDC->assignedClients.push_back(client);
+							client->assignedDatacenter_G = maxDC;
+							maxDC->assignedClients_G.push_back(client);
 							clientsToBeGroupedInMaxDC--;
 						}
 					}
@@ -345,11 +345,11 @@ namespace MatchmakingProblem
 
 	DatacenterType* MaximumMatchingProblem::GetClientNearestEligibleDC(ClientType & client)
 	{
-		if (client.eligibleDatacenters.empty())
+		if (client.eligibleDatacenters_G.empty())
 			return nullptr;
 
-		auto nearest = client.eligibleDatacenters.front();
-		for (auto & edc : client.eligibleDatacenters)
+		auto nearest = client.eligibleDatacenters_G.front();
+		for (auto & edc : client.eligibleDatacenters_G)
 		{
 			if (client.delayToDatacenter.at(edc->id) < client.delayToDatacenter.at(nearest->id))
 			{
@@ -359,39 +359,31 @@ namespace MatchmakingProblem
 		return nearest;
 	}
 
-	bool ClientComparatorByFewerEligibleDatacenters(const ClientType* a, const ClientType* b)
+	bool ClientComparatorByFewerEligibleDatacenters_G(const ClientType* a, const ClientType* b)
 	{
-		return (a->eligibleDatacenters.size() < b->eligibleDatacenters.size());
-	}
+		return (a->eligibleDatacenters_G.size() < b->eligibleDatacenters_G.size());
+	}	
 
 	bool DatacenterComparatorByPrice(const DatacenterType a, const DatacenterType b)
 	{
 		return (a.priceServer < b.priceServer);
-	}
+	}	
 
-	void ParetoOptimalMatchingProblem::FindEligibleClients(const int latencyThreshold)
-	{		
-		eligibleClients.clear();		
+	void ParetoMatchingProblem::SearchEligibleDatacenters4Clients(const int latencyThreshold)
+	{					
 		for (auto & client : globalClientList)
 		{
-			/*reset for safety*/
-			client.eligibleDatacenters_G.clear();
-			client.eligibleDatacenters_R.clear();
-			client.eligibleDatacenters_R_indexed_by_G.clear();
-
-			/*update the above three stuff*/
-			for (auto & dc_g : globalDatacenterList)
+			for (auto & dc_g : candidateDatacenters)
 			{
 				vector<DatacenterType*> eligibleDatacenters_R_indexed_by_G;
-				for (auto & dc_r : globalDatacenterList)
+				for (auto & dc_r : candidateDatacenters)
 				{
 					if ((client.delayToDatacenter.at(dc_r.id) + dc_r.delayToDatacenter.at(dc_g.id)) <= latencyThreshold)
 					{
 						client.eligibleDatacenters_R.push_back(&dc_r);
 						eligibleDatacenters_R_indexed_by_G.push_back(&dc_r);
 					}
-				}
-
+				}			
 				if (!eligibleDatacenters_R_indexed_by_G.empty())
 				{
 					client.eligibleDatacenters_G.push_back(&dc_g);
@@ -399,423 +391,744 @@ namespace MatchmakingProblem
 				}
 			}
 
-			/*check whether this client is eligible*/
-			if (!client.eligibleDatacenters_G.empty()) { eligibleClients.push_back(client); }
+			for (auto & dc_r : client.eligibleDatacenters_R)
+			{
+				vector<DatacenterType*> eligibleDatacenters_G_indexed_by_R;
+				for (auto & dc_g : client.eligibleDatacenters_G)
+				{
+					if (std::find(client.eligibleDatacenters_R_indexed_by_G.at(dc_g->id).begin(), client.eligibleDatacenters_R_indexed_by_G.at(dc_g->id).end(), dc_r) != client.eligibleDatacenters_R_indexed_by_G.at(dc_g->id).end())
+					{
+						eligibleDatacenters_G_indexed_by_R.push_back(dc_g);
+					}
+				}
+				client.eligibleDatacenters_G_indexed_by_R[dc_r->id] = eligibleDatacenters_G_indexed_by_R;
+			}
 		}
 	}
 
-	void ParetoOptimalMatchingProblem::Simulate(const string algToRun, const int clientCount, const int sessionSize, const int simulationCount)
-	{
-		/*fix the seed for random numnber generation for every algorithm*/
-		srand(0);
+	void ParetoMatchingProblem::G_Assignment_Random()
+	{		
+		srand(0); /*fix the random number engine*/
 
+		if (!R_Assignment_Completed)
+		{
+			for (auto & client : candidateClients)
+			{
+				auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());
+				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);
+			}			
+		}
+		else
+		{
+			for (auto & client : candidateClients)
+			{
+				auto index = GenerateRandomIndex(client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).size());
+				client.assignedDatacenter_G = client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).at(index);
+			}
+		}
+
+		G_Assignment_Completed = true;
+	}
+
+	void ParetoMatchingProblem::G_Assignment_Simple(const int sessionSize)
+	{			
+		for (auto & dc_g : candidateDatacenters)
+		{
+			/*search coverableClients_G*/
+			dc_g.coverableClients_G.clear();
+			for (auto & client : candidateClients)
+			{
+				if (!R_Assignment_Completed)
+				{
+					if (std::find(client.eligibleDatacenters_G.begin(), client.eligibleDatacenters_G.end(), &dc_g) != client.eligibleDatacenters_G.end())
+					{
+						dc_g.coverableClients_G.push_back(&client);
+					}
+				}
+				else
+				{
+					if (std::find(client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).begin(), client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end(), &dc_g) != client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end())
+					{
+						dc_g.coverableClients_G.push_back(&client);
+					}
+				}
+			}			
+
+			/*sort coverableClients_G*/
+			std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorByFewerEligibleDatacenters_G);
+		}
+				
+		while (true)
+		{
+			/*pick the maxDC*/
+			auto maxDC = &(candidateDatacenters.front());
+			int maxRank = 0;
+			for (auto & client : maxDC->coverableClients_G)
+			{
+				if (nullptr == client->assignedDatacenter_G) { maxRank++; }
+			}
+			for (auto & dc : candidateDatacenters)
+			{
+				int thisRank = 0;
+				for (auto & client : dc.coverableClients_G)
+				{
+					if (nullptr == client->assignedDatacenter_G) { thisRank++; }
+				}
+				if (thisRank > maxRank)
+				{
+					maxRank = thisRank;
+					maxDC = &dc;
+				}
+			}
+
+			/*determine how many unassigned clients to assign in this round*/
+			double unassignedClients_GInMaxDC = (double)maxRank;
+			int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_GInMaxDC / sessionSize) * sessionSize);
+			if (0 == clientsToBeGroupedInMaxDC) { break; }
+
+			/*group (assign) clients in the maxDC*/
+			for (auto & client : maxDC->coverableClients_G)
+			{
+				/*group (assign) one not-yet-grouped client*/
+				if (clientsToBeGroupedInMaxDC > 0)
+				{
+					if (nullptr == client->assignedDatacenter_G)
+					{
+						client->assignedDatacenter_G = maxDC;						
+						clientsToBeGroupedInMaxDC--;
+					}
+				}
+				else break;
+			}
+		}
+
+		G_Assignment_Completed = true;
+	}
+
+	void ParetoMatchingProblem::G_Assignment_Layered(const int sessionSize)
+	{	
+		if (!R_Assignment_Completed)
+		{			
+			for (auto & dc_g : candidateDatacenters)
+			{
+				/*search coverableClients_G*/
+				dc_g.coverableClients_G.clear();
+				for (auto & client : candidateClients)
+				{
+					if (std::find(client.eligibleDatacenters_G.begin(), client.eligibleDatacenters_G.end(), &dc_g) != client.eligibleDatacenters_G.end())
+					{
+						dc_g.coverableClients_G.push_back(&client);
+					}					
+				}
+
+				/*sort coverableClients_G*/
+				map<vector<DatacenterType*>, vector<ClientType*>, DatacenterPointerVectorCmp> clientSectors;
+				for (auto & c : dc_g.coverableClients_G) 
+				{ 
+					clientSectors[c->eligibleDatacenters_G].push_back(c); 
+				}
+				dc_g.coverableClients_G.clear();
+				for (auto & sector : clientSectors)
+				{
+					for (auto & c : sector.second)
+					{
+						dc_g.coverableClients_G.push_back(c);
+					}
+				}
+			}
+
+			for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
+			{
+				while (true)
+				{
+					/*pick the maxDC*/
+					auto maxDC = &(candidateDatacenters.front());
+					int maxRank = 0;
+					for (auto & client : maxDC->coverableClients_G)
+					{
+						if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G.size() <= layerIndex) { maxRank++; }
+					}
+					for (auto & dc : candidateDatacenters)
+					{
+						int thisRank = 0;
+						for (auto & client : dc.coverableClients_G)
+						{
+							if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G.size() <= layerIndex) { thisRank++; }
+						}
+
+						if (thisRank > maxRank)
+						{
+							maxRank = thisRank;
+							maxDC = &dc;
+						}
+					}
+
+					/*determine how many unassigned clients to assign in this round*/
+					double unassignedClients_GInMaxDC = (double)maxRank;
+					int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_GInMaxDC / sessionSize) * sessionSize);
+					if (0 == clientsToBeGroupedInMaxDC) { break; }
+
+					/*group (assign) clients in the maxDC*/
+					for (auto & client : maxDC->coverableClients_G)
+					{
+						if (clientsToBeGroupedInMaxDC > 0)
+						{
+							if (nullptr == client->assignedDatacenter_G)
+							{
+								client->assignedDatacenter_G = maxDC;
+								clientsToBeGroupedInMaxDC--;
+							}
+						}
+						else break;
+					}
+				}
+			}
+		}
+		else
+		{
+			for (auto & dc_g : candidateDatacenters)
+			{
+				/*search coverableClients_G*/
+				dc_g.coverableClients_G.clear();
+				for (auto & client : candidateClients)
+				{
+					if (std::find(client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).begin(), client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end(), &dc_g) != client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end())
+					{
+						dc_g.coverableClients_G.push_back(&client);
+					}
+				}
+
+				/*sort coverableClients_G*/
+				map<vector<DatacenterType*>, vector<ClientType*>, DatacenterPointerVectorCmp> clientSectors;
+				for (auto & client : dc_g.coverableClients_G)
+				{
+					clientSectors[client->eligibleDatacenters_G_indexed_by_R.at(client->assignedDatacenter_R->id)].push_back(client);
+				}
+				dc_g.coverableClients_G.clear();
+				for (auto & sector : clientSectors)
+				{
+					for (auto & client : sector.second)
+					{
+						dc_g.coverableClients_G.push_back(client);
+					}
+				}
+			}
+
+			for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
+			{
+				while (true)
+				{
+					/*pick the maxDC*/
+					auto maxDC = &(candidateDatacenters.front());
+					int maxRank = 0;
+					for (auto & client : maxDC->coverableClients_G)
+					{
+						if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G_indexed_by_R.at(client->assignedDatacenter_R->id).size() <= layerIndex) { maxRank++; }
+					}
+					for (auto & dc : candidateDatacenters)
+					{
+						int thisRank = 0;
+						for (auto & client : dc.coverableClients_G)
+						{
+							if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G_indexed_by_R.at(client->assignedDatacenter_R->id).size() <= layerIndex) { thisRank++; }
+						}
+
+						if (thisRank > maxRank)
+						{
+							maxRank = thisRank;
+							maxDC = &dc;
+						}
+					}
+
+					/*determine how many unassigned clients to assign in this round*/
+					double unassignedClients_GInMaxDC = (double)maxRank;
+					int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_GInMaxDC / sessionSize) * sessionSize);
+					if (0 == clientsToBeGroupedInMaxDC) { break; }
+
+					/*group (assign) clients in the maxDC*/
+					for (auto & client : maxDC->coverableClients_G)
+					{
+						if (clientsToBeGroupedInMaxDC > 0)
+						{
+							if (nullptr == client->assignedDatacenter_G)
+							{
+								client->assignedDatacenter_G = maxDC;
+								clientsToBeGroupedInMaxDC--;
+							}
+						}
+						else break;
+					}
+				}
+			}
+		}
+
+		G_Assignment_Completed = true;
+	}
+
+	void ParetoMatchingProblem::R_Assignment_Random()
+	{
+		srand(0); /*fix the random number engine*/
+
+		if (!G_Assignment_Completed)
+		{
+			for (auto & client : candidateClients) 
+			{ 
+				auto index = GenerateRandomIndex(client.eligibleDatacenters_R.size());
+				client.assignedDatacenter_R = client.eligibleDatacenters_R.at(index);
+			}
+		}
+		else
+		{
+			for (auto & client : candidateClients)
+			{
+				auto index = GenerateRandomIndex(client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).size());
+				client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).at(index);
+			}
+		}
+
+		R_Assignment_Completed = true;
+	}
+
+	void ParetoMatchingProblem::R_Assignment_LSP()
+	{
+		if (!G_Assignment_Completed)
+		{
+			for (auto & client : candidateClients)
+			{
+				client.assignedDatacenter_R = client.eligibleDatacenters_R.front();
+				for (auto & dc_r : client.eligibleDatacenters_R)
+				{
+					if (dc_r->priceServer < client.assignedDatacenter_R->priceServer)
+					{
+						client.assignedDatacenter_R = dc_r;
+					}
+				}
+			}
+		}
+		else
+		{
+			for (auto & client : candidateClients)
+			{
+				client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).front();
+				for (auto & dc_r : client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id))
+				{
+					if (dc_r->priceServer < client.assignedDatacenter_R->priceServer)
+					{
+						client.assignedDatacenter_R = dc_r;
+					}
+				}
+			}
+		}
+
+		R_Assignment_Completed = true;
+	}
+
+	void ParetoMatchingProblem::Simulate(const int latencyThreshold, const int clientCount, const int sessionSize, const double serverCapacity, const int simulationCount)
+	{	
+		/*handle bad parameters*/
 		if (clientCount < sessionSize)
 		{
 			printf("clientCount < sessionSize!\n");
 			return;
 		}
 
+		/*consider all datacenters as candidateDatacenters*/
+		candidateDatacenters = globalDatacenterList;
+
+		/*search eligible datacenters from candidateDatacenters for every client*/
+		SearchEligibleDatacenters4Clients(latencyThreshold);
+
 		/*run simulation round by round*/
 		for (int round = 1; round <= simulationCount; round++)
 		{
-			/*generate candidateClients (copies from globalClientList)*/
+			/*generate random candidateClients based on eligibility*/
 			candidateClients.clear();
-			while (true) 
+			while (candidateClients.size() < clientCount)
 			{ 
-				if (candidateClients.size() == clientCount) { break; }
-
-				candidateClients.push_back(eligibleClients.at(GenerateRandomIndex(eligibleClients.size())));				
+				auto oneRandomClient = globalClientList.at(GenerateRandomIndex(globalClientList.size()));
+				if (!oneRandomClient.eligibleDatacenters_G.empty()) { candidateClients.push_back(oneRandomClient); }
 			}
-						
-			/*generate candidateDatacenters (copy from globalDatacenterList)*/
-			candidateDatacenters = globalDatacenterList;		
-
-			/*run grouping algorithm*/
-			if ("random" == algToRun) Random(sessionSize);
-			else if ("greedy-1" == algToRun) Greedy_1(sessionSize);
-			else if ("greedy-2" == algToRun) Greedy_2(sessionSize);
-			else if ("greedy-3" == algToRun) Greedy_3(sessionSize);
 		}
 	}
 
-	void ParetoOptimalMatchingProblem::Random(const int sessionSize)
-	{	
-		/*reset*/
-		for (auto & client : candidateClients) 
-		{ 
-			client.assignedDatacenter_G = nullptr;
-			client.assignedDatacenter_R = nullptr;
-			client.isGrouped = false;
-		}
-		
-		/*determine assignedDatacenter_G for each client*/		
-		for (auto & client : candidateClients)
-		{			
-			if (!client.eligibleDatacenters_G.empty())
-			{
-				auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());				
-				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);					
-			}
-		}
+	//void ParetoMatchingProblem::Random(const int sessionSize)
+	//{	
+	//	/*reset*/
+	//	for (auto & client : candidateClients) 
+	//	{ 
+	//		client.assignedDatacenter_G = nullptr;
+	//		client.assignedDatacenter_R = nullptr;
+	//		client.isGrouped = false;
+	//	}
+	//	
+	//	/*determine assignedDatacenter_G for each client*/		
+	//	for (auto & client : candidateClients)
+	//	{			
+	//		if (!client.eligibleDatacenters_G.empty())
+	//		{
+	//			auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());				
+	//			client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);					
+	//		}
+	//	}
 
-		/*determine assignedDatacenter_R for each client*/		
-		for (auto & client : candidateClients)
-		{
-			if (!client.eligibleDatacenters_G.empty())
-			{				
-				auto index = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).size();
-				client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).at(GenerateRandomIndex(index));
-			}
-		}
+	//	/*determine assignedDatacenter_R for each client*/		
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (!client.eligibleDatacenters_G.empty())
+	//		{				
+	//			auto index = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).size();
+	//			client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).at(GenerateRandomIndex(index));
+	//		}
+	//	}
 
-		/*grouping*/
-		printf("\nsessionCounter,sessionCost\n");
-		vector<double> allCosts;
-		vector<vector<ClientType*>> allSessions;
-		while (true)
-		{
-			double oneCost = 0;
-			vector<ClientType*> oneSession;
-			bool noMoreNewSessions = true;
-			for (auto & dc_g : candidateDatacenters)
-			{
-				bool newSessionFound = false;
-				oneSession.clear();
-				for (auto & client : candidateClients)
-				{
-					if (client.eligibleDatacenters_G.empty()) continue;
+	//	/*grouping*/
+	//	printf("\nsessionCounter,sessionCost\n");
+	//	vector<double> allCosts;
+	//	vector<vector<ClientType*>> allSessions;
+	//	while (true)
+	//	{
+	//		double oneCost = 0;
+	//		vector<ClientType*> oneSession;
+	//		bool noMoreNewSessions = true;
+	//		for (auto & dc_g : candidateDatacenters)
+	//		{
+	//			bool newSessionFound = false;
+	//			oneSession.clear();
+	//			for (auto & client : candidateClients)
+	//			{
+	//				if (client.eligibleDatacenters_G.empty()) continue;
 
-					/*check if a new sesson is found and record stuff accordingly*/
-					if (oneSession.size() == sessionSize)
-					{
-						for (auto & sessionClient : oneSession) { oneCost += sessionClient->assignedDatacenter_R->priceServer; }
+	//				/*check if a new sesson is found and record stuff accordingly*/
+	//				if (oneSession.size() == sessionSize)
+	//				{
+	//					for (auto & sessionClient : oneSession) { oneCost += sessionClient->assignedDatacenter_R->priceServer; }
 
-						allCosts.push_back(oneCost);
+	//					allCosts.push_back(oneCost);
 
-						allSessions.push_back(oneSession);
+	//					allSessions.push_back(oneSession);
 
-						for (auto & sessionClient : oneSession) { sessionClient->isGrouped = true; }
+	//					for (auto & sessionClient : oneSession) { sessionClient->isGrouped = true; }
 
-						newSessionFound = true;
+	//					newSessionFound = true;
 
-						break; /*stop as a new session is found*/
-					}
+	//					break; /*stop as a new session is found*/
+	//				}
 
-					if (!client.isGrouped && client.assignedDatacenter_G->id == dc_g.id) { oneSession.push_back(&client); }
-				}
-				if (newSessionFound)
-				{
-					noMoreNewSessions = false;
-					break;
-				}
-			}
-			if (noMoreNewSessions)
-			{
-				break;
-			}
+	//				if (!client.isGrouped && client.assignedDatacenter_G->id == dc_g.id) { oneSession.push_back(&client); }
+	//			}
+	//			if (newSessionFound)
+	//			{
+	//				noMoreNewSessions = false;
+	//				break;
+	//			}
+	//		}
+	//		if (noMoreNewSessions)
+	//		{
+	//			break;
+	//		}
 
-			printf("%d,%.2f\n", (int)allSessions.size(), allCosts.back());			
-		}
+	//		printf("%d,%.2f\n", (int)allSessions.size(), allCosts.back());			
+	//	}
 
-		int groupedClientCount = 0;
-		for (auto & client : candidateClients)
-		{
-			if (client.isGrouped) groupedClientCount++;
-		}
-		printf("%d\n", groupedClientCount);
-	}
+	//	/*int groupedClientCount = 0;
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (client.isGrouped) groupedClientCount++;
+	//	}
+	//	printf("%d\n", groupedClientCount);*/
+	//}
 
-	void ParetoOptimalMatchingProblem::Greedy_1(const int sessionSize)
-	{						
-		/*reset*/
-		for (auto & client : candidateClients)
-		{
-			client.assignedDatacenter_G = nullptr;
-			client.assignedDatacenter_R = nullptr;
-			client.isGrouped = false;
-		}
+	//void ParetoMatchingProblem::Greedy_1(const int sessionSize)
+	//{						
+	//	/*reset*/
+	//	for (auto & client : candidateClients)
+	//	{
+	//		client.assignedDatacenter_G = nullptr;
+	//		client.assignedDatacenter_R = nullptr;
+	//		client.isGrouped = false;
+	//	}
 
-		/*determine assignedDatacenter_G for each client*/		
-		for (auto & client : candidateClients)
-		{
-			if (!client.eligibleDatacenters_G.empty())
-			{
-				auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());				
-				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);				
-			}
-		}		
+	//	/*determine assignedDatacenter_G for each client*/		
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (!client.eligibleDatacenters_G.empty())
+	//		{
+	//			auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());				
+	//			client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);				
+	//		}
+	//	}		
 
-		/*determine assignedDatacenter_R for each client*/		
-		for (auto & client : candidateClients)
-		{
-			if (!client.eligibleDatacenters_G.empty())
-			{
-				client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).front();
-				for (auto & d_r : client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id))
-				{
-					if (d_r->priceServer < client.assignedDatacenter_R->priceServer)
-					{
-						client.assignedDatacenter_R = d_r;
-					}
-				}
-			}
-		}		
+	//	/*determine assignedDatacenter_R for each client*/		
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (!client.eligibleDatacenters_G.empty())
+	//		{
+	//			client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).front();
+	//			for (auto & d_r : client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id))
+	//			{
+	//				if (d_r->priceServer < client.assignedDatacenter_R->priceServer)
+	//				{
+	//					client.assignedDatacenter_R = d_r;
+	//				}
+	//			}
+	//		}
+	//	}		
 
-		/*grouping*/
-		printf("\nsessionCounter,sessionCost\n");
-		vector<double> allCosts;
-		vector<vector<ClientType*>> allSessions;
-		while (true)
-		{
-			double oneCost = 0;
-			vector<ClientType*> oneSession;
-			bool noMoreNewSessions = true;
-			for (auto & dc_g : candidateDatacenters)
-			{
-				bool newSessionFound = false;
-				oneSession.clear();
-				for (auto & client : candidateClients)
-				{
-					if (client.eligibleDatacenters_G.empty()) continue;
+	//	/*grouping*/
+	//	printf("\nsessionCounter,sessionCost\n");
+	//	vector<double> allCosts;
+	//	vector<vector<ClientType*>> allSessions;
+	//	while (true)
+	//	{
+	//		double oneCost = 0;
+	//		vector<ClientType*> oneSession;
+	//		bool noMoreNewSessions = true;
+	//		for (auto & dc_g : candidateDatacenters)
+	//		{
+	//			bool newSessionFound = false;
+	//			oneSession.clear();
+	//			for (auto & client : candidateClients)
+	//			{
+	//				if (client.eligibleDatacenters_G.empty()) continue;
 
-					/*check if a new sesson is found and record stuff accordingly*/
-					if (oneSession.size() == sessionSize)
-					{
-						for (auto & sessionClient : oneSession) { oneCost += sessionClient->assignedDatacenter_R->priceServer; }
+	//				/*check if a new sesson is found and record stuff accordingly*/
+	//				if (oneSession.size() == sessionSize)
+	//				{
+	//					for (auto & sessionClient : oneSession) { oneCost += sessionClient->assignedDatacenter_R->priceServer; }
 
-						allCosts.push_back(oneCost);
+	//					allCosts.push_back(oneCost);
 
-						allSessions.push_back(oneSession);
+	//					allSessions.push_back(oneSession);
 
-						for (auto & sessionClient : oneSession) { sessionClient->isGrouped = true; }
+	//					for (auto & sessionClient : oneSession) { sessionClient->isGrouped = true; }
 
-						newSessionFound = true;
+	//					newSessionFound = true;
 
-						break; /*stop as a new session is found*/
-					}
+	//					break; /*stop as a new session is found*/
+	//				}
 
-					if (!client.isGrouped && client.assignedDatacenter_G->id == dc_g.id) { oneSession.push_back(&client); }
-				}
-				if (newSessionFound)
-				{
-					noMoreNewSessions = false;
-					break;
-				}
-			}
-			if (noMoreNewSessions)
-			{
-				break;
-			}
+	//				if (!client.isGrouped && client.assignedDatacenter_G->id == dc_g.id) { oneSession.push_back(&client); }
+	//			}
+	//			if (newSessionFound)
+	//			{
+	//				noMoreNewSessions = false;
+	//				break;
+	//			}
+	//		}
+	//		if (noMoreNewSessions)
+	//		{
+	//			break;
+	//		}
 
-			printf("%d,%.2f\n", (int)allSessions.size(), allCosts.back());
-		}
+	//		printf("%d,%.2f\n", (int)allSessions.size(), allCosts.back());
+	//	}
 
-		int groupedClientCount = 0;
-		for (auto & client : candidateClients)
-		{
-			if (client.isGrouped) groupedClientCount++;
-		}
-		printf("%d\n", groupedClientCount);
-	}
+	//	/*int groupedClientCount = 0;
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (client.isGrouped) groupedClientCount++;
+	//	}
+	//	printf("%d\n", groupedClientCount);*/
+	//}
 
-	void ParetoOptimalMatchingProblem::Greedy_2(const int sessionSize)
-	{
-		/*reset*/
-		for (auto & client : candidateClients)
-		{
-			client.assignedDatacenter_G = nullptr;
-			client.assignedDatacenter_R = nullptr;
-			client.isGrouped = false;
-		}
+	//void ParetoMatchingProblem::Greedy_2(const int sessionSize)
+	//{
+	//	/*reset*/
+	//	for (auto & client : candidateClients)
+	//	{
+	//		client.assignedDatacenter_G = nullptr;
+	//		client.assignedDatacenter_R = nullptr;
+	//		client.isGrouped = false;
+	//	}
 
-		/*determine assignedDatacenter_G for each client*/
-		for (auto & client : candidateClients)
-		{
-			if (!client.eligibleDatacenters_G.empty())
-			{
-				auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());
-				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);
-			}
-		}
+	//	/*determine assignedDatacenter_G for each client*/
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (!client.eligibleDatacenters_G.empty())
+	//		{
+	//			auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());
+	//			client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);
+	//		}
+	//	}
 
-		/*determine assignedDatacenter_R for each client*/
-		for (auto & client : candidateClients)
-		{
-			if (!client.eligibleDatacenters_G.empty())
-			{
-				client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).front();
-				for (auto & d_r : client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id))
-				{
-					if (d_r->priceServer < client.assignedDatacenter_R->priceServer)
-					{
-						client.assignedDatacenter_R = d_r;
-					}
-				}
-			}
-		}
+	//	/*determine assignedDatacenter_R for each client*/
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (!client.eligibleDatacenters_G.empty())
+	//		{
+	//			client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).front();
+	//			for (auto & d_r : client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id))
+	//			{
+	//				if (d_r->priceServer < client.assignedDatacenter_R->priceServer)
+	//				{
+	//					client.assignedDatacenter_R = d_r;
+	//				}
+	//			}
+	//		}
+	//	}
 
-		/*grouping*/
-		printf("\nsessionCounter,sessionCost\n");
-		vector<double> allCosts;
-		vector<vector<ClientType*>> allSessions;
-		auto copy_candidateDatacenters = candidateDatacenters;
-		std::sort(copy_candidateDatacenters.begin(), copy_candidateDatacenters.end(), DatacenterComparatorByPrice);
-		while (true)
-		{
-			double oneCost = 0;
-			vector<ClientType*> oneSession;
-			bool noMoreNewSessions = true;
-			for (auto & dc_g : candidateDatacenters)
-			{
-				bool newSessionFound = false;
-				oneSession.clear();
-				for (auto & dc_r : copy_candidateDatacenters)
-				{
-					for (auto & client : candidateClients)
-					{
-						if (client.eligibleDatacenters_G.empty()) continue;
+	//	/*grouping*/
+	//	printf("\nsessionCounter,sessionCost\n");
+	//	vector<double> allCosts;
+	//	vector<vector<ClientType*>> allSessions;
+	//	auto copy_candidateDatacenters = candidateDatacenters;
+	//	std::sort(copy_candidateDatacenters.begin(), copy_candidateDatacenters.end(), DatacenterComparatorByPrice);
+	//	while (true)
+	//	{
+	//		double oneCost = 0;
+	//		vector<ClientType*> oneSession;
+	//		bool noMoreNewSessions = true;
+	//		for (auto & dc_g : candidateDatacenters)
+	//		{
+	//			bool newSessionFound = false;
+	//			oneSession.clear();
+	//			for (auto & dc_r : copy_candidateDatacenters)
+	//			{
+	//				for (auto & client : candidateClients)
+	//				{
+	//					if (client.eligibleDatacenters_G.empty()) continue;
 
-						/*check if a new sesson is found and record stuff accordingly*/
-						if (oneSession.size() == sessionSize)
-						{
-							for (auto & sessionClient : oneSession) { oneCost += sessionClient->assignedDatacenter_R->priceServer; }
+	//					/*check if a new sesson is found and record stuff accordingly*/
+	//					if (oneSession.size() == sessionSize)
+	//					{
+	//						for (auto & sessionClient : oneSession) { oneCost += sessionClient->assignedDatacenter_R->priceServer; }
 
-							allCosts.push_back(oneCost);
+	//						allCosts.push_back(oneCost);
 
-							allSessions.push_back(oneSession);
+	//						allSessions.push_back(oneSession);
 
-							for (auto & sessionClient : oneSession) { sessionClient->isGrouped = true; }
+	//						for (auto & sessionClient : oneSession) { sessionClient->isGrouped = true; }
 
-							newSessionFound = true;
+	//						newSessionFound = true;
 
-							break; /*stop as a new session is found*/
-						}
+	//						break; /*stop as a new session is found*/
+	//					}
 
-						if (!client.isGrouped && client.assignedDatacenter_G->id == dc_g.id && client.assignedDatacenter_R->id == dc_r.id) { oneSession.push_back(&client); }
-					}
-					if (newSessionFound)
-					{
-						break;
-					}
-				}
-				if (newSessionFound)
-				{
-					noMoreNewSessions = false;
-					break;
-				}				
-			}
-			if (noMoreNewSessions)
-			{
-				break;
-			}
+	//					if (!client.isGrouped && client.assignedDatacenter_G->id == dc_g.id && client.assignedDatacenter_R->id == dc_r.id) { oneSession.push_back(&client); }
+	//				}
+	//				if (newSessionFound)
+	//				{
+	//					break;
+	//				}
+	//			}
+	//			if (newSessionFound)
+	//			{
+	//				noMoreNewSessions = false;
+	//				break;
+	//			}				
+	//		}
+	//		if (noMoreNewSessions)
+	//		{
+	//			break;
+	//		}
 
-			printf("%d,%.2f\n", (int)allSessions.size(), allCosts.back());
-		}
+	//		printf("%d,%.2f\n", (int)allSessions.size(), allCosts.back());
+	//	}
 
-		int groupedClientCount = 0;
-		for (auto & client : candidateClients)
-		{
-			if (client.isGrouped) groupedClientCount++;
-		}
-		printf("%d\n", groupedClientCount);
-	}
+	//	/*int groupedClientCount = 0;
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (client.isGrouped) groupedClientCount++;
+	//	}
+	//	printf("%d\n", groupedClientCount);*/
+	//}
 
-	void ParetoOptimalMatchingProblem::Greedy_3(const int sessionSize)
-	{
-		/*reset*/
-		for (auto & client : candidateClients)
-		{
-			client.assignedDatacenter_G = nullptr;
-			client.assignedDatacenter_R = nullptr;
-			client.isGrouped = false;
-		}		
+	//void ParetoMatchingProblem::Greedy_3(const int sessionSize)
+	//{
+	//	/*reset*/
+	//	for (auto & client : candidateClients)
+	//	{
+	//		client.assignedDatacenter_G = nullptr;
+	//		client.assignedDatacenter_R = nullptr;
+	//		client.isGrouped = false;
+	//	}		
 
-		/*determine assignedDatacenter_R for each client*/
-		for (auto & client : candidateClients)
-		{
-			if (!client.eligibleDatacenters_G.empty())
-			{
-				client.assignedDatacenter_R = client.eligibleDatacenters_R.front();
-				for (auto & d_r : client.eligibleDatacenters_R)
-				{
-					if (d_r->priceServer < client.assignedDatacenter_R->priceServer)
-					{
-						client.assignedDatacenter_R = d_r;
-					}
-				}
-			}
-		}
+	//	/*determine assignedDatacenter_R for each client*/
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (!client.eligibleDatacenters_G.empty())
+	//		{
+	//			client.assignedDatacenter_R = client.eligibleDatacenters_R.front();
+	//			for (auto & d_r : client.eligibleDatacenters_R)
+	//			{
+	//				if (d_r->priceServer < client.assignedDatacenter_R->priceServer)
+	//				{
+	//					client.assignedDatacenter_R = d_r;
+	//				}
+	//			}
+	//		}
+	//	}
 
-		/*determine assignedDatacenter_G for each client*/		
-		for (auto & client : candidateClients)
-		{			
-			if (!client.eligibleDatacenters_G.empty())
-			{
-				for (auto & d_g : client.eligibleDatacenters_G)
-				{
-					if (client.eligibleDatacenters_R_indexed_by_G.at(d_g->id).end() != std::find(client.eligibleDatacenters_R_indexed_by_G.at(d_g->id).begin(), client.eligibleDatacenters_R_indexed_by_G.at(d_g->id).end(), client.assignedDatacenter_R))
-					{
-						client.assignedDatacenter_G = d_g;						
-						break;
-					}
-				}
-			}
-		}
+	//	/*determine assignedDatacenter_G for each client*/		
+	//	for (auto & client : candidateClients)
+	//	{			
+	//		if (!client.eligibleDatacenters_G.empty())
+	//		{
+	//			for (auto & d_g : client.eligibleDatacenters_G)
+	//			{
+	//				if (client.eligibleDatacenters_R_indexed_by_G.at(d_g->id).end() != std::find(client.eligibleDatacenters_R_indexed_by_G.at(d_g->id).begin(), client.eligibleDatacenters_R_indexed_by_G.at(d_g->id).end(), client.assignedDatacenter_R))
+	//				{
+	//					client.assignedDatacenter_G = d_g;						
+	//					break;
+	//				}
+	//			}
+	//		}
+	//	}
 
-		/*grouping*/
-		printf("\nsessionCounter,sessionCost\n");
-		vector<double> allCosts;
-		vector<vector<ClientType*>> allSessions;
-		while (true)
-		{
-			double oneCost = 0;
-			vector<ClientType*> oneSession;
-			bool noMoreNewSessions = true;
-			for (auto & dc_g : candidateDatacenters)
-			{
-				bool newSessionFound = false;
-				oneSession.clear();
-				for (auto & client : candidateClients)
-				{
-					if (client.eligibleDatacenters_G.empty()) continue;
+	//	/*grouping*/
+	//	printf("\nsessionCounter,sessionCost\n");
+	//	vector<double> allCosts;
+	//	vector<vector<ClientType*>> allSessions;
+	//	while (true)
+	//	{
+	//		double oneCost = 0;
+	//		vector<ClientType*> oneSession;
+	//		bool noMoreNewSessions = true;
+	//		for (auto & dc_g : candidateDatacenters)
+	//		{
+	//			bool newSessionFound = false;
+	//			oneSession.clear();
+	//			for (auto & client : candidateClients)
+	//			{
+	//				if (client.eligibleDatacenters_G.empty()) continue;
 
-					/*check if a new sesson is found and record stuff accordingly*/
-					if (oneSession.size() == sessionSize)
-					{
-						for (auto & sessionClient : oneSession) { oneCost += sessionClient->assignedDatacenter_R->priceServer; }
+	//				/*check if a new sesson is found and record stuff accordingly*/
+	//				if (oneSession.size() == sessionSize)
+	//				{
+	//					for (auto & sessionClient : oneSession) { oneCost += sessionClient->assignedDatacenter_R->priceServer; }
 
-						allCosts.push_back(oneCost);
+	//					allCosts.push_back(oneCost);
 
-						allSessions.push_back(oneSession);
+	//					allSessions.push_back(oneSession);
 
-						for (auto & sessionClient : oneSession) { sessionClient->isGrouped = true; }
+	//					for (auto & sessionClient : oneSession) { sessionClient->isGrouped = true; }
 
-						newSessionFound = true;
+	//					newSessionFound = true;
 
-						break; /*stop as a new session is found*/
-					}
+	//					break; /*stop as a new session is found*/
+	//				}
 
-					if (!client.isGrouped && client.assignedDatacenter_G->id == dc_g.id) { oneSession.push_back(&client); }
-				}
-				if (newSessionFound)
-				{
-					noMoreNewSessions = false;
-					break;
-				}
-			}
-			if (noMoreNewSessions)
-			{
-				break;
-			}
+	//				if (!client.isGrouped && client.assignedDatacenter_G->id == dc_g.id) { oneSession.push_back(&client); }
+	//			}
+	//			if (newSessionFound)
+	//			{
+	//				noMoreNewSessions = false;
+	//				break;
+	//			}
+	//		}
+	//		if (noMoreNewSessions)
+	//		{
+	//			break;
+	//		}
 
-			printf("%d,%.2f\n", (int)allSessions.size(), allCosts.back());
-		}
+	//		printf("%d,%.2f\n", (int)allSessions.size(), allCosts.back());
+	//	}
 
-		int groupedClientCount = 0;
-		for (auto & client : candidateClients)
-		{
-			if (client.isGrouped) groupedClientCount++;
-		}
-		printf("%d\n", groupedClientCount);
-	}
+	//	/*int groupedClientCount = 0;
+	//	for (auto & client : candidateClients)
+	//	{
+	//		if (client.isGrouped) groupedClientCount++;
+	//	}
+	//	printf("%d\n", groupedClientCount);*/
+	//}
 }

@@ -13,24 +13,20 @@ namespace MatchmakingProblem
 		double chargedTrafficVolume;
 		map<int, double> delayToDatacenter;
 
-		/*for MaximumMatchingProblem*/
-		vector<DatacenterType*> eligibleDatacenters;
-		DatacenterType* assignedDatacenter = nullptr;
-
-		/*for ParetoOptimalMatchingProblem*/
 		vector<DatacenterType*> eligibleDatacenters_G;
-		vector<DatacenterType*> eligibleDatacenters_R;
+		vector<DatacenterType*> eligibleDatacenters_R;		
 		map<int, vector<DatacenterType*>> eligibleDatacenters_R_indexed_by_G;
+		map<int, vector<DatacenterType*>> eligibleDatacenters_G_indexed_by_R;
 		DatacenterType* assignedDatacenter_G = nullptr;
 		DatacenterType* assignedDatacenter_R = nullptr;
-		bool isGrouped;
+		bool isGrouped = false;
 		
 		ClientType(int givenID)
 		{
 			this->id = givenID;
 		}		
 	};	
-	bool ClientComparatorByFewerEligibleDatacenters(const ClientType* a, const ClientType* b);
+	bool ClientComparatorByFewerEligibleDatacenters_G(const ClientType* a, const ClientType* b);
 	
 	struct DatacenterType
 	{
@@ -40,11 +36,7 @@ namespace MatchmakingProblem
 		map<int, double> delayToClient; // delay value mapped with client's id (fixed once initialized)	
 		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)		
 		
-		/*for MaximumMatchingProblem*/
-		vector<ClientType*> coverableClients;
-		vector<ClientType*> assignedClients;
-
-		/*for ParetoOptimalMatchingProblem*/
+		vector<ClientType*> coverableClients_G;
 		vector<ClientType*> assignedClients_G;
 		vector<ClientType*> assignedClients_R;
 		
@@ -106,20 +98,31 @@ namespace MatchmakingProblem
 		void LayeredGreedyGrouping(const int sessionSize);
 	};
 
-	class ParetoOptimalMatchingProblem : public MatchmakingProblemBase
+	class ParetoMatchingProblem : public MatchmakingProblemBase
 	{
 	public:
 		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";
-		ofstream outFile;
-		void FindEligibleClients(const int latencyThreshold = 100);
-		void Simulate(const string algToRun, const int clientCount = 100, const int sessionSize = 10, const int simulationCount = 100);
-	private:
-		vector<ClientType> eligibleClients; // subset of globalClientList
-		vector<ClientType> candidateClients; // subset of eligibleClients
-		vector<DatacenterType> candidateDatacenters; // not a subset of globalDatacenterList but a copy of it
-		void Random(const int sessionSize);
+		ofstream outFile;		
+		void Simulate(const int latencyThreshold = 100, const int clientCount = 100, const int sessionSize = 10, const double serverCapacity = 4, const int simulationCount = 100);
+	private:		
+		void SearchEligibleDatacenters4Clients(const int latencyThreshold = 100);
+		vector<ClientType> candidateClients; // copy of a subset of globalClientList
+		vector<DatacenterType> candidateDatacenters; // copy of globalDatacenterList
+		
+		bool G_Assignment_Completed = false;
+		bool R_Assignment_Completed = false;
+
+		void G_Assignment_Random();
+		void G_Assignment_Simple(const int sessionSize);
+		void G_Assignment_Layered(const int sessionSize);
+		void R_Assignment_Random();
+		void R_Assignment_LSP();
+		void R_Assignment_LCW();
+		void R_Assignment_LAC();
+		
+		/*void Random(const int sessionSize);
 		void Greedy_1(const int sessionSize);
 		void Greedy_2(const int sessionSize);
-		void Greedy_3(const int sessionSize);
+		void Greedy_3(const int sessionSize);*/
 	};
 }
