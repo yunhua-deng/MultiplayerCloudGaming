@@ -6,6 +6,7 @@ namespace MatchmakingProblem
 {	
 	struct ClientType;
 	struct DatacenterType;
+	struct SessionType;
 	
 	struct ClientType
 	{
@@ -47,6 +48,11 @@ namespace MatchmakingProblem
 		}
 	};
 	bool DatacenterComparatorByPrice(const DatacenterType a, const DatacenterType b);
+
+	struct SessionType
+	{
+		vector<ClientType*> sessionClients;
+	};
 
 	struct DatacenterPointerVectorCmp
 	{
@@ -109,19 +115,31 @@ namespace MatchmakingProblem
 		void SearchEligibleDatacenters4Clients(const int latencyThreshold = 100);
 		vector<ClientType> candidateClients; // copy of a subset of globalClientList
 		vector<DatacenterType> candidateDatacenters; // copy of globalDatacenterList
+		vector<SessionType> allSessions;
 		
 		void ResetAssignment();
 
+		/*control flags*/
 		bool G_Assignment_Completed = false;
 		bool R_Assignment_Completed = false;
 
+		/*G_Assignment algorithms*/
 		void G_Assignment_Random();
 		void G_Assignment_Simple(const int sessionSize);
 		void G_Assignment_Layered(const int sessionSize);
 		
+		/*R_Assignment algorithms*/
 		void R_Assignment_Random();
 		void R_Assignment_LSP();
-		void R_Assignment_LCW(const int serverCapacity);		
+		void R_Assignment_LCW(const int serverCapacity);
+
+		/*GroupingAllocation algorithms*/
+		void Grouping_Random(const int sessionSize);
+		void Grouping_Greedy(const int sessionSize, const int serverCapacity, bool shareCostAcrossSessions = true);
+
+		/*main procedures*/
+		void ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage);	
+		double ComputeCost(const int serverCapacity, bool shareCostAcrossSessions = true);
 		
 		/*void Random(const int sessionSize);
 		void Greedy_1(const int sessionSize);
