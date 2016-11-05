@@ -37,6 +37,7 @@ namespace MatchmakingProblem
 		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)		
 		
 		vector<ClientType*> coverableClients_G;
+		vector<ClientType*> coverableClients_R;
 		vector<ClientType*> assignedClients_G;
 		vector<ClientType*> assignedClients_R;
 		
@@ -103,22 +104,24 @@ namespace MatchmakingProblem
 	public:
 		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";
 		ofstream outFile;		
-		void Simulate(const int latencyThreshold = 100, const int clientCount = 100, const int sessionSize = 10, const double serverCapacity = 4, const int simulationCount = 100);
+		void Simulate(const int latencyThreshold = 100, const int clientCount = 100, const int sessionSize = 10, const int serverCapacity = 4, const int simulationCount = 100);
 	private:		
 		void SearchEligibleDatacenters4Clients(const int latencyThreshold = 100);
 		vector<ClientType> candidateClients; // copy of a subset of globalClientList
 		vector<DatacenterType> candidateDatacenters; // copy of globalDatacenterList
 		
+		void ResetAssignment();
+
 		bool G_Assignment_Completed = false;
 		bool R_Assignment_Completed = false;
 
 		void G_Assignment_Random();
 		void G_Assignment_Simple(const int sessionSize);
 		void G_Assignment_Layered(const int sessionSize);
+		
 		void R_Assignment_Random();
 		void R_Assignment_LSP();
-		void R_Assignment_LCW();
-		void R_Assignment_LAC();
+		void R_Assignment_LCW(const int serverCapacity);		
 		
 		/*void Random(const int sessionSize);
 		void Greedy_1(const int sessionSize);

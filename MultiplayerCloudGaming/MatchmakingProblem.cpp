@@ -406,9 +406,28 @@ namespace MatchmakingProblem
 		}
 	}
 
+	void ParetoMatchingProblem::ResetAssignment()
+	{
+		for (auto & client : candidateClients)
+		{
+			client.assignedDatacenter_G = nullptr;
+			client.assignedDatacenter_R = nullptr;			
+		}
+
+		for (auto & dc : candidateDatacenters)
+		{
+			dc.coverableClients_G.clear();
+			dc.coverableClients_R.clear();
+			dc.assignedClients_G.clear();
+			dc.assignedClients_R.clear();			
+		}
+	}
+
 	void ParetoMatchingProblem::G_Assignment_Random()
 	{		
 		srand(0); /*fix the random number engine*/
+
+		ResetAssignment();
 
 		if (!R_Assignment_Completed)
 		{
@@ -432,32 +451,38 @@ namespace MatchmakingProblem
 
 	void ParetoMatchingProblem::G_Assignment_Simple(const int sessionSize)
 	{			
+		ResetAssignment();
+		
+		/*search coverableClients_G*/
 		for (auto & dc_g : candidateDatacenters)
-		{
-			/*search coverableClients_G*/
+		{			
 			dc_g.coverableClients_G.clear();
-			for (auto & client : candidateClients)
+			if (!R_Assignment_Completed)
 			{
-				if (!R_Assignment_Completed)
+				for (auto & client : candidateClients)
 				{
 					if (std::find(client.eligibleDatacenters_G.begin(), client.eligibleDatacenters_G.end(), &dc_g) != client.eligibleDatacenters_G.end())
 					{
 						dc_g.coverableClients_G.push_back(&client);
 					}
 				}
-				else
+			}
+			else
+			{
+				for (auto & client : candidateClients)
 				{
 					if (std::find(client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).begin(), client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end(), &dc_g) != client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end())
 					{
 						dc_g.coverableClients_G.push_back(&client);
 					}
 				}
-			}			
-
+			}
+			
 			/*sort coverableClients_G*/
 			std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorByFewerEligibleDatacenters_G);
 		}
-				
+			
+		/*G-Assignment*/
 		while (true)
 		{
 			/*pick the maxDC*/
@@ -482,8 +507,8 @@ namespace MatchmakingProblem
 			}
 
 			/*determine how many unassigned clients to assign in this round*/
-			double unassignedClients_GInMaxDC = (double)maxRank;
-			int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_GInMaxDC / sessionSize) * sessionSize);
+			double unassignedClients_G_InMaxDC = (double)maxRank;
+			int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
 			if (0 == clientsToBeGroupedInMaxDC) { break; }
 
 			/*group (assign) clients in the maxDC*/
@@ -507,11 +532,13 @@ namespace MatchmakingProblem
 
 	void ParetoMatchingProblem::G_Assignment_Layered(const int sessionSize)
 	{	
+		ResetAssignment();
+		
 		if (!R_Assignment_Completed)
 		{			
+			/*search coverableClients_G*/
 			for (auto & dc_g : candidateDatacenters)
-			{
-				/*search coverableClients_G*/
+			{				
 				dc_g.coverableClients_G.clear();
 				for (auto & client : candidateClients)
 				{
@@ -537,6 +564,7 @@ namespace MatchmakingProblem
 				}
 			}
 
+			/*G-Assignment*/
 			for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
 			{
 				while (true)
@@ -586,9 +614,9 @@ namespace MatchmakingProblem
 		}
 		else
 		{
+			/*search coverableClients_G*/
 			for (auto & dc_g : candidateDatacenters)
-			{
-				/*search coverableClients_G*/
+			{				
 				dc_g.coverableClients_G.clear();
 				for (auto & client : candidateClients)
 				{
@@ -614,6 +642,7 @@ namespace MatchmakingProblem
 				}
 			}
 
+			/*G-Assignment*/
 			for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
 			{
 				while (true)
@@ -641,8 +670,8 @@ namespace MatchmakingProblem
 					}
 
 					/*determine how many unassigned clients to assign in this round*/
-					double unassignedClients_GInMaxDC = (double)maxRank;
-					int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_GInMaxDC / sessionSize) * sessionSize);
+					double unassignedClients_G_InMaxDC = (double)maxRank;
+					int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
 					if (0 == clientsToBeGroupedInMaxDC) { break; }
 
 					/*group (assign) clients in the maxDC*/
@@ -669,6 +698,8 @@ namespace MatchmakingProblem
 	{
 		srand(0); /*fix the random number engine*/
 
+		ResetAssignment();
+
 		if (!G_Assignment_Completed)
 		{
 			for (auto & client : candidateClients) 
@@ -691,6 +722,8 @@ namespace MatchmakingProblem
 
 	void ParetoMatchingProblem::R_Assignment_LSP()
 	{
+		ResetAssignment();
+		
 		if (!G_Assignment_Completed)
 		{
 			for (auto & client : candidateClients)
@@ -723,7 +756,90 @@ namespace MatchmakingProblem
 		R_Assignment_Completed = true;
 	}
 
-	void ParetoMatchingProblem::Simulate(const int latencyThreshold, const int clientCount, const int sessionSize, const double serverCapacity, const int simulationCount)
+	void ParetoMatchingProblem::R_Assignment_LCW(const int serverCapacity)
+	{
+		ResetAssignment();
+		
+		/*search coverableClients_R*/
+		for (auto & dc_r : candidateDatacenters)
+		{			
+			dc_r.coverableClients_R.clear();
+			if (!G_Assignment_Completed)
+			{
+				for (auto & client : candidateClients)
+				{
+					if (std::find(client.eligibleDatacenters_R.begin(), client.eligibleDatacenters_R.end(), &dc_r) != client.eligibleDatacenters_R.end())
+					{
+						dc_r.coverableClients_R.push_back(&client);
+					}
+				}
+			}
+			else
+			{
+				for (auto & client : candidateClients)
+				{
+					if (std::find(client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).begin(), client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).end(), &dc_r) != client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).end())
+					{
+						dc_r.coverableClients_R.push_back(&client);
+					}
+				}
+			}
+		}
+
+		/*R-Assignment*/
+		while (true)
+		{				
+			/*compute projectedWastage*/
+			vector<int> projectedWastage(candidateDatacenters.size());
+			for (int i = 0; i < candidateDatacenters.size(); i++)
+			{											
+				int numberOfNewClientsToAssign = 0;
+				for (auto & client : candidateDatacenters.at(i).coverableClients_R)
+				{
+					if (nullptr == client->assignedDatacenter_R)
+						numberOfNewClientsToAssign++;
+				}				
+				if (numberOfNewClientsToAssign > 0)
+				{
+					if (0 == numberOfNewClientsToAssign % serverCapacity)
+						projectedWastage.at(i) = 0;
+					else
+						projectedWastage.at(i) = serverCapacity - numberOfNewClientsToAssign % serverCapacity;
+				}
+				else
+				{
+					projectedWastage.at(i) = serverCapacity;
+				}			
+			}
+
+			/*find the index of the dc with the minimum projectedWastage*/
+			int index_assignedDatacenter_R = 0;
+			for (int i = 0; i < candidateDatacenters.size(); i++)
+			{
+				if (projectedWastage.at(i) < projectedWastage.at(index_assignedDatacenter_R))
+					index_assignedDatacenter_R = i;
+			}
+
+			/*assign unassigned clients to index_assignedDatacenter_R*/
+			int numOfNewlyAssignedClients = 0;
+			for (auto & client : candidateDatacenters.at(index_assignedDatacenter_R).coverableClients_R)
+			{
+				if (nullptr == client->assignedDatacenter_R)
+				{
+					client->assignedDatacenter_R = &(candidateDatacenters.at(index_assignedDatacenter_R));
+					numOfNewlyAssignedClients++;
+				}
+			}
+
+			/*terminate*/
+			if (0 == numOfNewlyAssignedClients)
+				break;
+		}
+
+		R_Assignment_Completed = true;
+	}
+
+	void ParetoMatchingProblem::Simulate(const int latencyThreshold, const int clientCount, const int sessionSize, const int serverCapacity, const int simulationCount)
 	{	
 		/*handle bad parameters*/
 		if (clientCount < sessionSize)
