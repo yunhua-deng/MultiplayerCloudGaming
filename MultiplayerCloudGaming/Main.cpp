@@ -33,6 +33,23 @@ int main(int argc, char *argv[])
 	/*ParetoMatchingProblem*/
 	auto simulator = MatchmakingProblem::ParetoMatchingProblem();
 	simulator.Initialize();
+	_mkdir(simulator.outputDirectory.c_str());
+	for (bool sharedCostAcrossSessions : { true, false })
+	{
+		for (int clientCount : { 100, 500 })
+		{
+			for (int latencyThreshold : { 100 })
+			{
+				for (int sessionSize : { 10 })
+				{
+					for (int serverCapacity : { 1, 4 })
+					{
+						simulator.Simulate(sharedCostAcrossSessions, clientCount, latencyThreshold, sessionSize, serverCapacity);
+					}
+				}
+			}
+		}
+	}
 
 	return 0;
 }

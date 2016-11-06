@@ -20,13 +20,13 @@ namespace MatchmakingProblem
 		map<int, vector<DatacenterType*>> eligibleDatacenters_G_indexed_by_R;
 		DatacenterType* assignedDatacenter_G = nullptr;
 		DatacenterType* assignedDatacenter_R = nullptr;
-		bool isGrouped = false;
+		bool isGrouped = false; /*used by legacy grouping functions only*/
 		
 		ClientType(int givenID)
 		{
 			this->id = givenID;
-		}		
-	};	
+		}
+	};
 	bool ClientComparatorByFewerEligibleDatacenters_G(const ClientType* a, const ClientType* b);
 	
 	struct DatacenterType
@@ -48,11 +48,6 @@ namespace MatchmakingProblem
 		}
 	};
 	bool DatacenterComparatorByPrice(const DatacenterType a, const DatacenterType b);
-
-	struct SessionType
-	{
-		vector<ClientType*> sessionClients;
-	};
 
 	struct DatacenterPointerVectorCmp
 	{
@@ -79,6 +74,11 @@ namespace MatchmakingProblem
 		}
 	};
 	
+	struct SessionType
+	{
+		vector<ClientType*> sessionClients;
+	};
+
 	class MatchmakingProblemBase
 	{			
 	public:
@@ -107,40 +107,54 @@ namespace MatchmakingProblem
 
 	class ParetoMatchingProblem : public MatchmakingProblemBase
 	{
-	public:
-		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";
-		ofstream outFile;		
-		void Simulate(const int latencyThreshold = 100, const int clientCount = 100, const int sessionSize = 10, const int serverCapacity = 4, const int simulationCount = 100);
-	private:		
-		void SearchEligibleDatacenters4Clients(const int latencyThreshold = 100);
+	public:			
+		string outputDirectory = dataDirectory + "ParetoMatchingProblem\\";
+		void Simulate(
+			const bool shareCostAcrossSessions_input = true, 
+			const int clientCount = 100, const int latencyThreshold = 100, 
+			const int sessionSize = 10, const int serverCapacity = 4, 
+			const int simulationCount = 100);
+	private:
 		vector<ClientType> candidateClients; // copy of a subset of globalClientList
 		vector<DatacenterType> candidateDatacenters; // copy of globalDatacenterList
 		vector<SessionType> allSessions;
 		
-		void ResetAssignment();
+		bool shareCostAcrossSessions; /*used by grouping and cost computation*/
+		
+		void SearchEligibleDatacenters4Clients(const int latencyThreshold);
 
-		/*control flags*/
-		bool G_Assignment_Completed = false;
-		bool R_Assignment_Completed = false;
+		/*stage flags (need to be reset for each round)*/
+		bool Assignment_G_Completed = false;
+		bool Assignment_R_Completed = false;
+		bool Grouping_Completed = false;
+		void ResetStageFlag();		
 
 		/*G_Assignment algorithms*/
 		void G_Assignment_Random();
 		void G_Assignment_Simple(const int sessionSize);
 		void G_Assignment_Layered(const int sessionSize);
+		void Reset_G_Assignment();
 		
 		/*R_Assignment algorithms*/
 		void R_Assignment_Random();
 		void R_Assignment_LSP();
 		void R_Assignment_LCW(const int serverCapacity);
+		void Reset_R_Assignment();
 
-		/*GroupingAllocation algorithms*/
-		void Grouping_Random(const int sessionSize);
-		void Grouping_Greedy(const int sessionSize, const int serverCapacity, bool shareCostAcrossSessions = true);
-
-		/*main procedures*/
-		void ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage);	
-		double ComputeCost(const int serverCapacity, bool shareCostAcrossSessions = true);
+		/*assign each client in candidateClients to one dc_g and one dc_r*/
+		void ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage);
 		
+		/*Grouping algorithms*/
+		void Grouping_Random(const int sessionSize);
+		void Grouping_Greedy(const int sessionSize, const int serverCapacity);
+		
+		/*group clients into sessions*/
+		void ClientGrouping(const int sessionSize, const int serverCapacity, const string algThirdStage);
+
+		/*compute final cost based on the assignment and grouping results*/
+		double ComputeServerCost(const int serverCapacity);
+
+		/*legacy functions*/
 		/*void Random(const int sessionSize);
 		void Greedy_1(const int sessionSize);
 		void Greedy_2(const int sessionSize);
