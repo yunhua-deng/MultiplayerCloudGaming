@@ -56,7 +56,7 @@ namespace MatchmakingProblem
 		}
 		for (auto row : strings_read)
 		{
-			DC_Name_List.push_back(row.front());
+			DC_Name_List.push_back(row.at(0));
 			vector<double> InterDatacenterDelayMatrixOneRow;
 			for (size_t col = 1; col < row.size(); col++)
 			{
@@ -92,10 +92,7 @@ namespace MatchmakingProblem
 			}
 			globalClientList.push_back(client);
 		}
-		printf("%d clients loaded\n", int(globalClientList.size()));
-
-		/*create client clusters*/
-		ClientClustering();
+		printf("%d clients loaded\n", int(globalClientList.size()));		
 
 		/* create datacenters */
 		for (int i = 0; i < totalDatacenterCount; i++)
@@ -115,6 +112,9 @@ namespace MatchmakingProblem
 			globalDatacenterList.push_back(dc);
 		}
 		printf("%d datacenters loaded\n", int(globalDatacenterList.size()));
+
+		/*create client clusters*/
+		ClientClustering();
 	}
 
 	void MatchmakingProblemBase::ClientClustering()
@@ -139,6 +139,11 @@ namespace MatchmakingProblem
 			clientCluster[region].push_back(c);
 		}
 		cout << clientCluster.size() << " client clusters are created\n";
+		for (auto & cluster : clientCluster)
+		{
+			cout << cluster.first << ": " << cluster.second.size() << " clients\n";
+		}
+		//cin.get();
 	}
 		
 	void MaximumMatchingProblem::RandomAssignmentGrouping()
@@ -451,22 +456,24 @@ namespace MatchmakingProblem
 		candidateClients.clear();		
 		if (controlled)
 		{
-			for (auto & cluster : clientCluster)
+			while (candidateClients.size() < clientCount)
 			{
-				if (candidateClients.size() == clientCount)
+				for (auto & cluster : clientCluster)
 				{
-					break;
-				}
-				while (true)
-				{
-					auto clientIndex = GenerateRandomIndex(cluster.second.size());
-					auto oneClient = globalClientList.at(cluster.second.at(clientIndex));
-					if (!oneClient.eligibleDatacenters_G.empty())
+					if (candidateClients.size() < clientCount)
 					{
-						candidateClients.push_back(oneClient);
-						break;
-					}
-				}				
+						while (true)
+						{
+							auto clientIndex = GenerateRandomIndex(cluster.second.size());
+							auto oneClient = globalClientList.at(cluster.second.at(clientIndex));
+							if (!oneClient.eligibleDatacenters_G.empty())
+							{
+								candidateClients.push_back(oneClient);
+								break;
+							}
+						}
+					}					
+				}
 			}
 		}
 		else
@@ -480,7 +487,15 @@ namespace MatchmakingProblem
 					candidateClients.push_back(oneClient); 
 				}
 			}
-		}		
+		}
+
+		/*just in case*/
+		if (candidateClients.size() != clientCount)
+		{
+			printf("\n***candidateClients.size() != clientCount***\n");
+			cin.get();
+			return;
+		}
 	}
 
 	void ParetoMatchingProblem::ResetStageFlag()
