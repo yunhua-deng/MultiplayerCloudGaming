@@ -36,13 +36,13 @@ int main(int argc, char *argv[])
 	_mkdir(simulator.outputDirectory.c_str());
 	for (bool sharedCostAcrossSessions : { true, false })
 	{
-		for (int clientCount : { 100, 500 })
+		for (int clientCount : { 500 })
 		{
 			for (int latencyThreshold : { 100 })
 			{
 				for (int sessionSize : { 10 })
 				{
-					for (int serverCapacity : { 1, 4 })
+					for (int serverCapacity : { 4 })
 					{
 						simulator.Simulate(sharedCostAcrossSessions, clientCount, latencyThreshold, sessionSize, serverCapacity);
 					}

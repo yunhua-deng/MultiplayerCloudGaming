@@ -12,7 +12,7 @@ namespace MatchmakingProblem
 	{
 		int id;
 		double chargedTrafficVolume;
-		map<int, double> delayToDatacenter;
+		map<int, double> delayToDatacenter;		
 
 		vector<DatacenterType*> eligibleDatacenters_G;
 		vector<DatacenterType*> eligibleDatacenters_R;		
@@ -35,7 +35,8 @@ namespace MatchmakingProblem
 		double priceServer; // server price (per server per session duration that is supposed to be up to 1 hour)
 		double priceBandwidth; // bandwidth price per unit traffic volume (per GB)
 		map<int, double> delayToClient; // delay value mapped with client's id (fixed once initialized)	
-		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)		
+		map<int, double> delayToDatacenter; // delay value mapped with dc's id (fixed once initialized)
+		string name;
 		
 		vector<ClientType*> coverableClients_G;
 		vector<ClientType*> coverableClients_R;
@@ -86,7 +87,9 @@ namespace MatchmakingProblem
 		void Initialize();
 	protected:
 		vector<ClientType> globalClientList; // read from input
-		vector<DatacenterType> globalDatacenterList; // read from input		
+		vector<DatacenterType> globalDatacenterList; // read from input
+		map<string, vector<int>> clientCluster;
+		void ClientClustering();
 	};
 
 	class MaximumMatchingProblem : public MatchmakingProblemBase
@@ -122,6 +125,7 @@ namespace MatchmakingProblem
 		bool shareCostAcrossSessions; /*used by grouping and cost computation*/
 		
 		void SearchEligibleDatacenters4Clients(const int latencyThreshold);
+		void GenerateCandidateClients(const int clientCount, const bool controlled = false);
 
 		/*stage flags (need to be reset for each round)*/
 		bool Assignment_G_Completed = false;

@@ -24,6 +24,7 @@ namespace MatchmakingProblem
 		/* temporary stuff */
 		vector<vector<double>> ClientToDatacenterDelayMatrix;
 		vector<vector<double>> InterDatacenterDelayMatrix;
+		vector<string> DC_Name_List;
 		vector<double> priceServerList;
 		vector<double> priceBandwidthList;
 
@@ -55,6 +56,7 @@ namespace MatchmakingProblem
 		}
 		for (auto row : strings_read)
 		{
+			DC_Name_List.push_back(row.front());
 			vector<double> InterDatacenterDelayMatrixOneRow;
 			for (size_t col = 1; col < row.size(); col++)
 			{
@@ -90,7 +92,10 @@ namespace MatchmakingProblem
 			}
 			globalClientList.push_back(client);
 		}
-		//printf("%d clients loaded\n", int(globalClientList.size()));
+		printf("%d clients loaded\n", int(globalClientList.size()));
+
+		/*create client clusters*/
+		ClientClustering();
 
 		/* create datacenters */
 		for (int i = 0; i < totalDatacenterCount; i++)
@@ -98,6 +103,7 @@ namespace MatchmakingProblem
 			DatacenterType dc(i);
 			dc.priceServer = priceServerList.at(i);
 			dc.priceBandwidth = priceBandwidthList.at(i);
+			dc.name = DC_Name_List.at(i);
 			for (auto client : globalClientList)
 			{
 				dc.delayToClient[client.id] = client.delayToDatacenter[dc.id];
@@ -108,9 +114,33 @@ namespace MatchmakingProblem
 			}
 			globalDatacenterList.push_back(dc);
 		}
-		//printf("%d datacenters loaded\n", int(globalDatacenterList.size()));
+		printf("%d datacenters loaded\n", int(globalDatacenterList.size()));
 	}
-	
+
+	void MatchmakingProblemBase::ClientClustering()
+	{
+		for (int c = 0; c < globalClientList.size(); c++)
+		{			
+			/*find nearestDC*/
+			int nearestDC = 0;
+			for (int d = 1; d < globalDatacenterList.size(); d++)
+			{
+				if (globalClientList.at(c).delayToDatacenter.at(d) < globalClientList.at(c).delayToDatacenter.at(nearestDC))
+				{
+					nearestDC = d;
+				}
+			}
+
+			/*determine region*/
+			auto pos = globalDatacenterList.at(nearestDC).name.find_first_of("-");
+			auto region = globalDatacenterList.at(nearestDC).name.substr(pos + 1, 2); // e.g. extract "ap" from "ec2-ap-northeast-1"
+
+			/*add to cluster based on region*/
+			clientCluster[region].push_back(c);
+		}
+		cout << clientCluster.size() << " client clusters are created\n";
+	}
+		
 	void MaximumMatchingProblem::RandomAssignmentGrouping()
 	{
 		/*reset assignedClients_G*/
@@ -414,6 +444,43 @@ namespace MatchmakingProblem
 				client.eligibleDatacenters_G_indexed_by_R[dc_r->id] = eligibleDatacenters_G_indexed_by_R;
 			}
 		}
+	}
+
+	void ParetoMatchingProblem::GenerateCandidateClients(const int clientCount, const bool controlled)
+	{
+		candidateClients.clear();		
+		if (controlled)
+		{
+			for (auto & cluster : clientCluster)
+			{
+				if (candidateClients.size() == clientCount)
+				{
+					break;
+				}
+				while (true)
+				{
+					auto clientIndex = GenerateRandomIndex(cluster.second.size());
+					auto oneClient = globalClientList.at(cluster.second.at(clientIndex));
+					if (!oneClient.eligibleDatacenters_G.empty())
+					{
+						candidateClients.push_back(oneClient);
+						break;
+					}
+				}				
+			}
+		}
+		else
+		{
+			while (candidateClients.size() < clientCount)
+			{
+				auto clientIndex = GenerateRandomIndex(globalClientList.size());
+				auto oneClient = globalClientList.at(clientIndex);
+				if (!oneClient.eligibleDatacenters_G.empty()) 
+				{ 
+					candidateClients.push_back(oneClient); 
+				}
+			}
+		}		
 	}
 
 	void ParetoMatchingProblem::ResetStageFlag()
@@ -1240,19 +1307,14 @@ namespace MatchmakingProblem
 
 		/*stuff to record performance results*/
 		map<string, vector<double>> sessionCountTable;
-		map<string, vector<double>> serverCostTable;
+		map<string, vector<double>> averageCostTable;
 		map<string, vector<double>> computationTimeTable;
 
 		/*run simulation round by round (each round corresponds to a set of randomly selected candidateClients)*/
 		for (int round = 1; round <= simulationCount; round++)
 		{
-			/*select random candidateClients based on eligibility*/
-			candidateClients.clear();
-			while (candidateClients.size() < clientCount)
-			{
-				auto oneRandomClient = globalClientList.at(GenerateRandomIndex(globalClientList.size()));
-				if (!oneRandomClient.eligibleDatacenters_G.empty()) { candidateClients.push_back(oneRandomClient); }
-			}
+			/*generate new candidateClients*/
+			GenerateCandidateClients(clientCount, true);
 
 			/*reset stage flags -> assignment stage (two sub-stages) -> grouping stage -> compute server cost -> record session count and server cost*/
 			for (string algFirstStage : { "G_Assignment_Random",  "G_Assignment_Simple",  "G_Assignment_Layered", "R_Assignment_Random", "R_Assignment_LSP", "R_Assignment_LCW" })
@@ -1274,13 +1336,13 @@ namespace MatchmakingProblem
 						ResetStageFlag();
 						ClientAssignment(sessionSize, serverCapacity, algFirstStage, algSecondStage);
 						ClientGrouping(sessionSize, serverCapacity, algThirdStage);
-						auto serverCost = ComputeServerCost(serverCapacity);
+						auto totalCost = ComputeServerCost(serverCapacity);
 						auto computationTime = std::difftime(clock(), startTime);
 
 						/*record performance data*/
 						auto solutionName = algFirstStage + "." + algSecondStage + "." + algThirdStage;
 						sessionCountTable[solutionName].push_back((double)allSessions.size());
-						serverCostTable[solutionName].push_back(serverCost);
+						averageCostTable[solutionName].push_back(totalCost / allSessions.size());
 						computationTimeTable[solutionName].push_back(computationTime);
 					}
 				}
@@ -1296,7 +1358,7 @@ namespace MatchmakingProblem
 		}
 		dataFile.close();
 		dataFile = ofstream(settingPerTest + "serverCost.csv");
-		for (auto & it : serverCostTable)
+		for (auto & it : averageCostTable)
 		{
 			dataFile << it.first << "," << GetMeanValue(it.second) << "," << GetStdValue(it.second) << "\n";
 		}
