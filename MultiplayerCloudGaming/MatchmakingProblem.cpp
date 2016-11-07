@@ -45,6 +45,8 @@ namespace MatchmakingProblem
 			}
 			ClientToDatacenterDelayMatrix.push_back(ClientToDatacenterDelayMatrixOneRow);
 		}
+		const int totalClientCount = int(ClientToDatacenterDelayMatrix.size());
+		const int totalDatacenterCount = int(ClientToDatacenterDelayMatrix.front().size());
 
 		/*dc-to-dc latency data*/
 		strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + InterDatacenterLatencyFile, ',', true);
@@ -64,7 +66,18 @@ namespace MatchmakingProblem
 			}
 			InterDatacenterDelayMatrix.push_back(InterDatacenterDelayMatrixOneRow);
 		}
-		const int totalClientCount = int(ClientToDatacenterDelayMatrix.size());
+		/*detect the asymmetry of dc-to-dc latency*/
+		/*for (int i = 0; i < InterDatacenterDelayMatrix.size(); i++)
+		{
+			for (int j = 0; j < InterDatacenterDelayMatrix.size(); j++)
+			{
+				if (InterDatacenterDelayMatrix.at(i).at(j) != InterDatacenterDelayMatrix.at(j).at(i))
+				{
+					printf("\n*** %f != %f -> using the maximum to make them symmetric***\n", InterDatacenterDelayMatrix.at(i).at(j), InterDatacenterDelayMatrix.at(j).at(i));
+					InterDatacenterDelayMatrix.at(i).at(j) = std::max(InterDatacenterDelayMatrix.at(i).at(j), InterDatacenterDelayMatrix.at(j).at(i));
+				}
+			}
+		}*/
 
 		/* bandwidth and server price data */
 		strings_read = ReadDelimitedTextFileIntoVector(dataDirectory + BandwidthServerPricingFile, ',', true);
@@ -78,8 +91,7 @@ namespace MatchmakingProblem
 		{
 			priceBandwidthList.push_back(stod(row.at(1)));
 			priceServerList.push_back(stod(row.at(3))); // 2: g2.8xlarge, 3: g2.2xlarge
-		}
-		const int totalDatacenterCount = int(ClientToDatacenterDelayMatrix.front().size());
+		}		
 
 		/* creating clients */
 		for (int i = 0; i < totalClientCount; i++)
@@ -142,8 +154,13 @@ namespace MatchmakingProblem
 		for (auto & cluster : clientCluster)
 		{
 			cout << cluster.first << ": " << cluster.second.size() << " clients\n";
-		}
-		//cin.get();
+			if (cluster.second.empty())
+			{
+				printf("\n***ERROR: some cluster has no clients***\n");
+				cin.get();
+				return;
+			}
+		}		
 	}
 		
 	void MaximumMatchingProblem::RandomAssignmentGrouping()
@@ -409,45 +426,35 @@ namespace MatchmakingProblem
 	{					
 		if (candidateDatacenters.empty())
 		{
-			printf("\n***candidateDatacenters is empty***\n");
+			printf("\n***ERROR: candidateDatacenters is empty***\n");
 			cin.get();
 			return;
 		}
 		
 		for (auto & client : globalClientList)
-		{
-			/*eligibleDatacenters_R_indexed_by_G*/
+		{			
 			for (auto & dc_g : candidateDatacenters)
 			{
 				vector<DatacenterType*> eligibleDatacenters_R_indexed_by_G;
 				for (auto & dc_r : candidateDatacenters)
 				{
-					if ((client.delayToDatacenter.at(dc_r.id) + dc_r.delayToDatacenter.at(dc_g.id)) <= latencyThreshold)
+					if ((client.delayToDatacenter.at(dc_r.id) + dc_r.delayToDatacenter.at(dc_g.id)) < latencyThreshold)
 					{
 						client.eligibleDatacenters_R.push_back(&dc_r);
 						eligibleDatacenters_R_indexed_by_G.push_back(&dc_r);
 					}
-				}			
+				}
 				if (!eligibleDatacenters_R_indexed_by_G.empty())
 				{
 					client.eligibleDatacenters_G.push_back(&dc_g);
 					client.eligibleDatacenters_R_indexed_by_G[dc_g.id] = eligibleDatacenters_R_indexed_by_G;
-				}
-			}
 
-			/*eligibleDatacenters_G_indexed_by_R*/
-			for (auto & dc_r : client.eligibleDatacenters_R)
-			{
-				vector<DatacenterType*> eligibleDatacenters_G_indexed_by_R;
-				for (auto & dc_g : client.eligibleDatacenters_G)
-				{
-					if (std::find(client.eligibleDatacenters_R_indexed_by_G.at(dc_g->id).begin(), client.eligibleDatacenters_R_indexed_by_G.at(dc_g->id).end(), dc_r) != client.eligibleDatacenters_R_indexed_by_G.at(dc_g->id).end())
+					for (auto & dc_r_by_g : client.eligibleDatacenters_R_indexed_by_G.at(dc_g.id))
 					{
-						eligibleDatacenters_G_indexed_by_R.push_back(dc_g);
+						client.eligibleDatacenters_G_indexed_by_R[dc_r_by_g->id].push_back(&dc_g);
 					}
 				}
-				client.eligibleDatacenters_G_indexed_by_R[dc_r->id] = eligibleDatacenters_G_indexed_by_R;
-			}
+			}				
 		}
 	}
 
@@ -489,10 +496,60 @@ namespace MatchmakingProblem
 			}
 		}
 
+		/*double-check*/
+		for (auto & client : candidateClients)
+		{
+			if (client.eligibleDatacenters_G.empty())
+			{
+				printf("\n***ERROR: eligibleDatacenters_G is empty***\n");
+				cin.get();
+			}
+
+			if (client.eligibleDatacenters_R.empty()) 
+			{ 
+				printf("\n***ERROR: eligibleDatacenters_R is empty***\n");
+				cin.get();
+			}
+
+			if (client.eligibleDatacenters_R_indexed_by_G.empty())
+			{
+				printf("\n***ERROR: eligibleDatacenters_R_indexed_by_G is empty***\n");
+				cin.get();
+			}
+			else
+			{
+				for (auto & dc_g : client.eligibleDatacenters_G)
+				{
+					if (client.eligibleDatacenters_R_indexed_by_G.at(dc_g->id).empty())
+					{
+						printf("\n***ERROR: eligibleDatacenters_R_indexed_by_G.at(%d) is empty***\n", dc_g->id);
+						cin.get();
+					}
+				}
+			}
+
+			if (client.eligibleDatacenters_G_indexed_by_R.empty())
+			{
+				printf("\n***ERROR: eligibleDatacenters_G_indexed_by_R is empty***\n");
+				cin.get();
+			}
+			else
+			{
+				for (auto & dc_r : client.eligibleDatacenters_R)
+				{
+					if (client.eligibleDatacenters_G_indexed_by_R.at(dc_r->id).empty())
+					{
+						printf("\n***ERROR: eligibleDatacenters_G_indexed_by_R.at(%d) is empty***\n", dc_r->id);
+						cin.get();
+					}
+				}
+			}
+		}
+
 		/*just in case*/
 		if (candidateClients.size() != clientCount)
 		{
-			printf("\n***candidateClients.size() != clientCount***\n");
+			printf("\n***ERROR: candidateClients.size() != clientCount***\n");
 			cin.get();
 			return;
 		}
@@ -510,7 +567,7 @@ namespace MatchmakingProblem
 		/*ensure not yet assigned*/
 		if (Assignment_G_Completed)
 		{
-			printf("\n***already assigned to G***\n");
+			printf("\n***ERROR: already assigned to G***\n");
 			cin.get();
 			return;
 		}
@@ -520,21 +577,21 @@ namespace MatchmakingProblem
 		Reset_G_Assignment();
 
 		/*G_Assignment*/
-		if (!Assignment_R_Completed)
+		if (Assignment_R_Completed)
 		{
 			for (auto & client : candidateClients)
 			{
-				auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());
-				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);	
+				auto index = GenerateRandomIndex(client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).size());				
+				client.assignedDatacenter_G = client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).at(index);
 				client.assignedDatacenter_G->assignedClients_G.push_back(&client);
-			}			
+			}				
 		}
 		else
 		{
 			for (auto & client : candidateClients)
 			{
-				auto index = GenerateRandomIndex(client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).size());
-				client.assignedDatacenter_G = client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).at(index);
+				auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());
+				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);
 				client.assignedDatacenter_G->assignedClients_G.push_back(&client);
 			}
 		}
@@ -549,7 +606,7 @@ namespace MatchmakingProblem
 		/*ensure not yet assigned*/
 		if (Assignment_G_Completed)
 		{
-			printf("\n***already assigned to G***\n");
+			printf("\n***ERROR: already assigned to G***\n");
 			cin.get();
 			return;
 		}
@@ -560,11 +617,11 @@ namespace MatchmakingProblem
 		for (auto & dc_g : candidateDatacenters)
 		{			
 			dc_g.coverableClients_G.clear();
-			if (!Assignment_R_Completed)
+			if (Assignment_R_Completed)
 			{
 				for (auto & client : candidateClients)
 				{
-					if (std::find(client.eligibleDatacenters_G.begin(), client.eligibleDatacenters_G.end(), &dc_g) != client.eligibleDatacenters_G.end())
+					if (std::find(client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).begin(), client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end(), &dc_g) != client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end())
 					{
 						dc_g.coverableClients_G.push_back(&client);
 					}
@@ -574,7 +631,7 @@ namespace MatchmakingProblem
 			{
 				for (auto & client : candidateClients)
 				{
-					if (std::find(client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).begin(), client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end(), &dc_g) != client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).end())
+					if (std::find(client.eligibleDatacenters_G.begin(), client.eligibleDatacenters_G.end(), &dc_g) != client.eligibleDatacenters_G.end())
 					{
 						dc_g.coverableClients_G.push_back(&client);
 					}
@@ -641,93 +698,14 @@ namespace MatchmakingProblem
 		/*ensure not yet assigned*/
 		if (Assignment_G_Completed)
 		{
-			printf("\n***already assigned to G***\n");
+			printf("\n***ERROR: already assigned to G***\n");
 			cin.get();
 			return;
 		}
 		
-		Reset_G_Assignment();
+		Reset_G_Assignment();	
 		
-		if (!Assignment_R_Completed)
-		{			
-			/*search coverableClients_G*/
-			for (auto & dc_g : candidateDatacenters)
-			{				
-				dc_g.coverableClients_G.clear();
-				for (auto & client : candidateClients)
-				{
-					if (std::find(client.eligibleDatacenters_G.begin(), client.eligibleDatacenters_G.end(), &dc_g) != client.eligibleDatacenters_G.end())
-					{
-						dc_g.coverableClients_G.push_back(&client);
-					}					
-				}
-
-				/*sort coverableClients_G*/
-				map<vector<DatacenterType*>, vector<ClientType*>, DatacenterPointerVectorCmp> clientSectors;
-				for (auto & c : dc_g.coverableClients_G) 
-				{ 
-					clientSectors[c->eligibleDatacenters_G].push_back(c); 
-				}
-				dc_g.coverableClients_G.clear();
-				for (auto & sector : clientSectors)
-				{
-					for (auto & c : sector.second)
-					{
-						dc_g.coverableClients_G.push_back(c);
-					}
-				}
-			}
-
-			/*G-Assignment*/
-			for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
-			{
-				while (true)
-				{
-					/*pick the maxDC*/
-					auto maxDC = &(candidateDatacenters.front());
-					int maxRank = 0;
-					for (auto & client : maxDC->coverableClients_G)
-					{
-						if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G.size() <= layerIndex) { maxRank++; }
-					}
-					for (auto & dc : candidateDatacenters)
-					{
-						int thisRank = 0;
-						for (auto & client : dc.coverableClients_G)
-						{
-							if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G.size() <= layerIndex) { thisRank++; }
-						}
-
-						if (thisRank > maxRank)
-						{
-							maxRank = thisRank;
-							maxDC = &dc;
-						}
-					}
-
-					/*determine how many unassigned clients to assign in this round*/
-					double unassignedClients_G_InMaxDC = (double)maxRank;
-					int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
-					if (0 == clientsToBeGroupedInMaxDC) { break; }
-
-					/*group (assign) clients in the maxDC*/
-					for (auto & client : maxDC->coverableClients_G)
-					{
-						if (clientsToBeGroupedInMaxDC > 0)
-						{
-							if (nullptr == client->assignedDatacenter_G)
-							{
-								client->assignedDatacenter_G = maxDC;
-								client->assignedDatacenter_G->assignedClients_G.push_back(client);
-								clientsToBeGroupedInMaxDC--;
-							}
-						}
-						else break;
-					}
-				}
-			}
-		}
-		else
+		if (Assignment_R_Completed)
 		{
 			/*search coverableClients_G*/
 			for (auto & dc_g : candidateDatacenters)
@@ -806,6 +784,85 @@ namespace MatchmakingProblem
 				}
 			}
 		}
+		else
+		{
+			/*search coverableClients_G*/
+			for (auto & dc_g : candidateDatacenters)
+			{
+				dc_g.coverableClients_G.clear();
+				for (auto & client : candidateClients)
+				{
+					if (std::find(client.eligibleDatacenters_G.begin(), client.eligibleDatacenters_G.end(), &dc_g) != client.eligibleDatacenters_G.end())
+					{
+						dc_g.coverableClients_G.push_back(&client);
+					}
+				}
+
+				/*sort coverableClients_G*/
+				map<vector<DatacenterType*>, vector<ClientType*>, DatacenterPointerVectorCmp> clientSectors;
+				for (auto & c : dc_g.coverableClients_G)
+				{
+					clientSectors[c->eligibleDatacenters_G].push_back(c);
+				}
+				dc_g.coverableClients_G.clear();
+				for (auto & sector : clientSectors)
+				{
+					for (auto & c : sector.second)
+					{
+						dc_g.coverableClients_G.push_back(c);
+					}
+				}
+			}
+
+			/*G-Assignment*/
+			for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
+			{
+				while (true)
+				{
+					/*pick the maxDC*/
+					auto maxDC = &(candidateDatacenters.front());
+					int maxRank = 0;
+					for (auto & client : maxDC->coverableClients_G)
+					{
+						if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G.size() <= layerIndex) { maxRank++; }
+					}
+					for (auto & dc : candidateDatacenters)
+					{
+						int thisRank = 0;
+						for (auto & client : dc.coverableClients_G)
+						{
+							if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G.size() <= layerIndex) { thisRank++; }
+						}
+
+						if (thisRank > maxRank)
+						{
+							maxRank = thisRank;
+							maxDC = &dc;
+						}
+					}
+
+					/*determine how many unassigned clients to assign in this round*/
+					double unassignedClients_G_InMaxDC = (double)maxRank;
+					int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
+					if (0 == clientsToBeGroupedInMaxDC) { break; }
+
+					/*group (assign) clients in the maxDC*/
+					for (auto & client : maxDC->coverableClients_G)
+					{
+						if (clientsToBeGroupedInMaxDC > 0)
+						{
+							if (nullptr == client->assignedDatacenter_G)
+							{
+								client->assignedDatacenter_G = maxDC;
+								client->assignedDatacenter_G->assignedClients_G.push_back(client);
+								clientsToBeGroupedInMaxDC--;
+							}
+						}
+						else break;
+					}
+				}
+			}
+		}
 
 		/*marked*/
 		Assignment_G_Completed = true;
@@ -829,7 +886,7 @@ namespace MatchmakingProblem
 		/*ensure not yet assigned*/
 		if (Assignment_R_Completed)
 		{
-			printf("\n***already assigned to R***\n");
+			printf("\n***ERROR: already assigned to R***\n");
 			cin.get();
 			return;
 		}
@@ -838,25 +895,25 @@ namespace MatchmakingProblem
 
 		Reset_R_Assignment();
 
-		if (!Assignment_G_Completed)
-		{
-			for (auto & client : candidateClients) 
-			{ 
-				auto index = GenerateRandomIndex(client.eligibleDatacenters_R.size());
-				client.assignedDatacenter_R = client.eligibleDatacenters_R.at(index);
-				client.assignedDatacenter_R->assignedClients_R.push_back(&client);
-			}
-		}
-		else
+		if (Assignment_G_Completed)
 		{
 			for (auto & client : candidateClients)
-			{	
+			{
 				if (nullptr != client.assignedDatacenter_G)
 				{
 					auto index = GenerateRandomIndex(client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).size());
 					client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).at(index);
 					client.assignedDatacenter_R->assignedClients_R.push_back(&client);
 				}
+			}
+		}
+		else
+		{			
+			for (auto & client : candidateClients)
+			{
+				auto index = GenerateRandomIndex(client.eligibleDatacenters_R.size());
+				client.assignedDatacenter_R = client.eligibleDatacenters_R.at(index);
+				client.assignedDatacenter_R->assignedClients_R.push_back(&client);
 			}
 		}
 
@@ -869,29 +926,14 @@ namespace MatchmakingProblem
 		/*ensure not yet assigned*/
 		if (Assignment_R_Completed)
 		{
-			printf("\n***already assigned to R***\n");
+			printf("\n***ERROR: already assigned to R***\n");
 			cin.get();
 			return;
 		}
 		
 		Reset_R_Assignment();
 		
-		if (!Assignment_G_Completed)
-		{
-			for (auto & client : candidateClients)
-			{
-				client.assignedDatacenter_R = client.eligibleDatacenters_R.front();
-				for (auto & dc_r : client.eligibleDatacenters_R)
-				{
-					if (dc_r->priceServer < client.assignedDatacenter_R->priceServer)
-					{
-						client.assignedDatacenter_R = dc_r;
-					}
-				}
-				client.assignedDatacenter_R->assignedClients_R.push_back(&client);
-			}
-		}
-		else
+		if (Assignment_G_Completed)
 		{
 			for (auto & client : candidateClients)
 			{
@@ -907,6 +949,21 @@ namespace MatchmakingProblem
 					}
 					client.assignedDatacenter_R->assignedClients_R.push_back(&client);
 				}
+			}			
+		}
+		else
+		{
+			for (auto & client : candidateClients)
+			{
+				client.assignedDatacenter_R = client.eligibleDatacenters_R.front();
+				for (auto & dc_r : client.eligibleDatacenters_R)
+				{
+					if (dc_r->priceServer < client.assignedDatacenter_R->priceServer)
+					{
+						client.assignedDatacenter_R = dc_r;
+					}
+				}
+				client.assignedDatacenter_R->assignedClients_R.push_back(&client);
 			}
 		}
 
@@ -919,7 +976,7 @@ namespace MatchmakingProblem
 		/*ensure not yet assigned*/
 		if (Assignment_R_Completed)
 		{
-			printf("\n***already assigned to R***\n");
+			printf("\n***ERROR: already assigned to R***\n");
 			cin.get();
 			return;
 		}
@@ -930,17 +987,7 @@ namespace MatchmakingProblem
 		for (auto & dc_r : candidateDatacenters)
 		{			
 			dc_r.coverableClients_R.clear();
-			if (!Assignment_G_Completed)
-			{
-				for (auto & client : candidateClients)
-				{
-					if (std::find(client.eligibleDatacenters_R.begin(), client.eligibleDatacenters_R.end(), &dc_r) != client.eligibleDatacenters_R.end())
-					{
-						dc_r.coverableClients_R.push_back(&client);
-					}
-				}
-			}
-			else
+			if (Assignment_G_Completed)
 			{
 				for (auto & client : candidateClients)
 				{
@@ -950,6 +997,16 @@ namespace MatchmakingProblem
 						{
 							dc_r.coverableClients_R.push_back(&client);
 						}
+					}
+				}				
+			}
+			else
+			{
+				for (auto & client : candidateClients)
+				{
+					if (std::find(client.eligibleDatacenters_R.begin(), client.eligibleDatacenters_R.end(), &dc_r) != client.eligibleDatacenters_R.end())
+					{
+						dc_r.coverableClients_R.push_back(&client);
 					}
 				}
 			}
@@ -1024,7 +1081,7 @@ namespace MatchmakingProblem
 		{
 			if ("G_Assignment_Random" == algSecondStage || "G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage)
 			{
-				printf("\n***invalid assignment algorithm combination***\n");
+				printf("\n***ERROR: invalid assignment algorithm combination***\n");
 				cin.get();
 				return;
 			}
@@ -1033,7 +1090,7 @@ namespace MatchmakingProblem
 		{
 			if ("R_Assignment_Random" == algSecondStage || "R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage)
 			{
-				printf("\n***invalid assignment algorithm combination***\n");
+				printf("\n***ERROR: invalid assignment algorithm combination***\n");
 				cin.get();
 				return;
 			}
@@ -1061,7 +1118,7 @@ namespace MatchmakingProblem
 		/*ensure ClientAssignment() is completed*/
 		if (!Assignment_G_Completed || !Assignment_R_Completed)
 		{
-			printf("\n***cannot run Grouping() as ClientAssignment() not yet completed***\n");
+			printf("\n***ERROR: cannot run Grouping() as ClientAssignment() not yet completed***\n");
 			cin.get();
 			return;
 		}
@@ -1069,7 +1126,7 @@ namespace MatchmakingProblem
 		/*ensure not yet grouped*/
 		if (Grouping_Completed)
 		{
-			printf("\n***already grouped***\n");
+			printf("\n***ERROR: already grouped***\n");
 			cin.get();
 			return;
 		}
@@ -1102,7 +1159,7 @@ namespace MatchmakingProblem
 		/*ensure ClientAssignment() is completed*/
 		if (!Assignment_G_Completed || !Assignment_R_Completed)
 		{
-			printf("\n***cannot run Grouping() as ClientAssignment() not yet completed***\n");
+			printf("\n***ERROR: cannot run Grouping() as ClientAssignment() not yet completed***\n");
 			cin.get();
 			return;
 		}
@@ -1110,7 +1167,7 @@ namespace MatchmakingProblem
 		/*ensure not yet grouped*/
 		if (Grouping_Completed)
 		{
-			printf("\n***already grouped***\n");
+			printf("\n***ERROR: already grouped***\n");
 			cin.get();
 			return;
 		}
@@ -1230,7 +1287,7 @@ namespace MatchmakingProblem
 		/*ensure ClientAssignment() is completed*/
 		if (!Assignment_G_Completed || !Assignment_R_Completed)
 		{
-			printf("\n***cannot run ClientGrouping() because ClientAssignment() not yet completed***\n");
+			printf("\n***ERROR: cannot run ClientGrouping() because ClientAssignment() not yet completed***\n");
 			cin.get();
 			return;
 		}
@@ -1244,9 +1301,9 @@ namespace MatchmakingProblem
 		/*ensure G_Assignment, R_Assignment, and Grouping done*/
 		if (!Assignment_G_Completed || !Assignment_R_Completed || !Grouping_Completed)
 		{
-			printf("\n***Assignment_G_Completed, Assignment_R_Completed, or Grouping_Completed is false***\n");
+			printf("\n***ERROR: Assignment_G_Completed, Assignment_R_Completed, or Grouping_Completed is false***\n");
 			cin.get();
-			return 0;
+			return -1;
 		}
 		
 		double totalCost = 0;
@@ -1295,7 +1352,7 @@ namespace MatchmakingProblem
 		/*handle bad parameters*/
 		if (clientCount < sessionSize)
 		{
-			printf("\n***clientCount < sessionSize***\n");
+			printf("\n***ERROR: clientCount < sessionSize***\n");
 			cin.get();
 			return;
 		}
@@ -1312,7 +1369,7 @@ namespace MatchmakingProblem
 		}
 		if (totalEligibleClientCount < clientCount)
 		{
-			printf("\n***totalEligibleClientCount < clientCount***\n");
+			printf("\n***ERROR: totalEligibleClientCount < clientCount***\n");
 			cin.get();
 			return;
 		}

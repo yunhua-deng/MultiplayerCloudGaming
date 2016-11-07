@@ -20,7 +20,7 @@
 using namespace std;
 
 vector<vector<string>> ReadDelimitedTextFileIntoVector(const string, const char, const bool);
-size_t GenerateRandomIndex(const size_t size);
+int GenerateRandomIndex(const int size);
 double GetMeanValue(const vector<double> & v);
 double GetStdValue(const vector<double> & v);
 double GetMinValue(const vector<double> & v);

@@ -39,9 +39,11 @@ vector<vector<string>> ReadDelimitedTextFileIntoVector(const string input_file_n
 	return strings_read;
 }
 
-size_t GenerateRandomIndex(const size_t size)
+int GenerateRandomIndex(const int size)
 {
-	return size_t(std::rand() % size);
+	if (size < 1) return -1;
+	
+	return (std::rand() % size);
 }
 
 double GetMeanValue(const vector<double> &v)

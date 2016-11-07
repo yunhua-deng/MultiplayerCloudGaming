@@ -131,7 +131,7 @@ namespace MatchmakingProblem
 		bool Assignment_G_Completed = false;
 		bool Assignment_R_Completed = false;
 		bool Grouping_Completed = false;
-		void ResetStageFlag();		
+		void ResetStageFlag();
 
 		/*G_Assignment algorithms*/
 		void G_Assignment_Random();
