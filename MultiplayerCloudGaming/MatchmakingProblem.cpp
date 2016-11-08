@@ -14,6 +14,8 @@ namespace MatchmakingProblem
 
 	void MatchmakingProblemBase::Initialize()
 	{				
+		auto startTime = clock();
+		
 		string ClientDatacenterLatencyFile = "ping_to_prefix_median_matrix.csv";
 		string InterDatacenterLatencyFile = "ping_to_dc_median_matrix.csv";
 		string BandwidthServerPricingFile = "pricing_bandwidth_server.csv";
@@ -127,6 +129,8 @@ namespace MatchmakingProblem
 
 		/*create client clusters*/
 		ClientClustering();
+
+		printf("\n***Initialize(): %.2f seconds***\n", std::difftime(clock(),startTime) / 1000);
 	}
 
 	void MatchmakingProblemBase::ClientClustering()
@@ -1135,24 +1139,24 @@ namespace MatchmakingProblem
 		for (auto & dc_g : candidateDatacenters)
 		{
 			vector<SessionType> emptySessionList;
-			allSessions[dc_g.id] = emptySessionList;
+			sessionListPerG[dc_g.id] = emptySessionList;
 		}
 
-		/*random grouping*/
+		/*grouping*/
 		for (auto & dc_g : candidateDatacenters)
 		{			
 			SessionType oneSession;
 			for (auto & client : candidateClients)
-			{
-				if (oneSession.sessionClients.size() == sessionSize)
-				{
-					allSessions.at(dc_g.id).push_back(oneSession);
-					oneSession.sessionClients.clear();
-				}
-				else if ((nullptr != client.assignedDatacenter_G) && (dc_g.id == client.assignedDatacenter_G->id))
+			{				
+				if ((nullptr != client.assignedDatacenter_G) && (dc_g.id == client.assignedDatacenter_G->id))
 				{
 					oneSession.sessionClients.push_back(&client);
-				}
+					if (oneSession.sessionClients.size() == sessionSize)
+					{
+						sessionListPerG.at(dc_g.id).push_back(oneSession);
+						oneSession.sessionClients.clear(); // reset for next session
+					}
+				}				
 			}
 		}
 
@@ -1196,10 +1200,10 @@ namespace MatchmakingProblem
 		for (auto & dc_g : candidateDatacenters)
 		{
 			vector<SessionType> emptySessionList;
-			allSessions[dc_g.id] = emptySessionList;
+			sessionListPerG[dc_g.id] = emptySessionList;
 		}
 
-		/*greedy grouping*/
+		/*grouping*/
 		map<int, vector<ClientType*>> clientsToGroup;
 		for (auto & dc_g : candidateDatacenters)
 		{
@@ -1231,14 +1235,11 @@ namespace MatchmakingProblem
 			SessionType oneSession;
 			for (auto & client : clientsToGroup.at(dc_g.id))
 			{
+				oneSession.sessionClients.push_back(client);				
 				if (oneSession.sessionClients.size() == sessionSize)
 				{
-					allSessions.at(dc_g.id).push_back(oneSession);
-					oneSession.sessionClients.clear();
-				}
-				else
-				{
-					oneSession.sessionClients.push_back(client);
+					sessionListPerG.at(dc_g.id).push_back(oneSession);
+					oneSession.sessionClients.clear(); // reset for next session
 				}
 			}
 		}
@@ -1283,11 +1284,11 @@ namespace MatchmakingProblem
 		}
 
 		/*compute*/
-		for (auto & sessionListPerG : allSessions)
+		for (auto & sessionList : sessionListPerG)
 		{
-			sessionCount += sessionListPerG.second.size();
+			sessionCount += sessionList.second.size();
 
-			for (auto & session : sessionListPerG.second)
+			for (auto & session : sessionList.second)
 			{
 				for (const auto & client : session.sessionClients)
 				{
@@ -1305,8 +1306,10 @@ namespace MatchmakingProblem
 		totalServerUtilization = totalGroupedClientCount / (totalServerCount * serverCapacity);
 	}
 
-	void ParetoMatchingProblem::Simulate(const int clientCount, const int latencyThreshold, const int sessionSize, const int serverCapacity, const int simulationCount)
+	void ParetoMatchingProblem::Simulate(const bool controlledCandidateClients, const int clientCount, const int latencyThreshold, const int sessionSize, const int serverCapacity, const int simulationCount)
 	{	
+		auto startTime = clock();
+		
 		/*fixing the random seed such that every run of the Simulate() will have the same random candidateClients in each round*/
 		srand(0);
 		
@@ -1333,7 +1336,7 @@ namespace MatchmakingProblem
 			printf("\n***ERROR: totalEligibleClientCount < clientCount***\n");
 			cin.get();
 			return;
-		}			
+		}
 
 		/*stuff to record performance results*/
 		map<string, vector<double>> sessionCountTable;
@@ -1344,7 +1347,7 @@ namespace MatchmakingProblem
 		for (int round = 1; round <= simulationCount; round++)
 		{
 			/*generate new candidateClients*/
-			GenerateCandidateClients(clientCount, true);
+			GenerateCandidateClients(clientCount, controlledCandidateClients);
 
 			/*reset stage flags -> assignment stage (two sub-stages) -> grouping stage -> compute server cost -> record session count and server cost*/
 			for (string algFirstStage : { "G_Assignment_Random",  "G_Assignment_Simple",  "G_Assignment_Layered", "R_Assignment_Random", "R_Assignment_LSP", "R_Assignment_LCW" })
@@ -1359,13 +1362,13 @@ namespace MatchmakingProblem
 					else if ("R_Assignment_Random" == algSecondStage || "R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage) { continue; }
 					
 					/*finally, the algThirdStage*/
-					for (string algThirdStage : { "Grouping_Random" })
+					for (string algThirdStage : { "Grouping_Random", "Grouping_Greedy" })
 					{
 						/*run one combination of three algorithms for three stages*/						
 						ResetStageFlag();
 						ClientAssignment(sessionSize, serverCapacity, algFirstStage, algSecondStage);
 						ClientGrouping(sessionSize, serverCapacity, algThirdStage);
-						double sessionCount, totalServerCost, totalServerUtilization;
+						double sessionCount = 0, totalServerCost = 0, totalServerUtilization = 0;
 						ComputePerformance(serverCapacity, sessionCount, totalServerCost, totalServerUtilization);
 
 						/*record performance data*/
@@ -1379,7 +1382,7 @@ namespace MatchmakingProblem
 		}		
 
 		/*dump performance results to disk files*/
-		string settingPerTest = outputDirectory + std::to_string(clientCount) + "." + std::to_string(latencyThreshold) + "." + std::to_string(sessionSize) + "." + std::to_string(serverCapacity);
+		string settingPerTest = outputDirectory + std::to_string(controlledCandidateClients) + "." + std::to_string(clientCount) + "." + std::to_string(latencyThreshold) + "." + std::to_string(sessionSize) + "." + std::to_string(serverCapacity);
 		auto dataFile = ofstream(settingPerTest + ".csv");				
 		dataFile << "solutionName,sessionCount,serverCost,serverUtilization\n"; // header line
 		for (auto & it : sessionCountTable)
@@ -1387,6 +1390,8 @@ namespace MatchmakingProblem
 			dataFile << it.first << "," << GetMeanValue(it.second) << "," << GetMeanValue(serverCostTable.at(it.first)) << "," << GetMeanValue(serverUtilizationTable.at(it.first)) << "\n";
 		}
 		dataFile.close();
+
+		printf("\n***Simulate(): %.2f seconds***\n", std::difftime(clock(), startTime) / 1000);
 	}
 		
 	//void ParetoMatchingProblem::Random(const int sessionSize)

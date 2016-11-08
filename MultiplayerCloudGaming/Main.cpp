@@ -31,23 +31,28 @@ int main(int argc, char *argv[])
 	//}
 
 	/*ParetoMatchingProblem*/
+	auto startTime = clock();
 	auto simulator = MatchmakingProblem::ParetoMatchingProblem();
 	simulator.Initialize();
 	_mkdir(simulator.outputDirectory.c_str());
-	for (int clientCount : { 100, 500, 1000 })
+	for (bool controlled : { false, true })
 	{
-		for (int latencyThreshold : { 50, 100 })
+		for (int clientCount : { 100, 500 })
 		{
-			for (int sessionSize : { 10 })
+			for (int latencyThreshold : { 50, 100 })
 			{
-				for (int serverCapacity : { 4 })
+				for (int sessionSize : { 10 })
 				{
-					cout << "run tests with setting: " << clientCount << "." << latencyThreshold << "." << sessionSize << "." << serverCapacity << "\n";
-					simulator.Simulate(clientCount, latencyThreshold, sessionSize, serverCapacity);
+					for (int serverCapacity : { 4 })
+					{
+						cout << "\nSimulate() with setting: " << controlled << "." << clientCount << "." << latencyThreshold << "." << sessionSize << "." << serverCapacity << "\n";
+						simulator.Simulate(controlled, clientCount, latencyThreshold, sessionSize, serverCapacity, 100);
+					}
 				}
 			}
 		}
 	}
+	printf("\n***total simulation running time: %.2f seconds***\n", std::difftime(clock(), startTime) / 1000);
 
 	return 0;
 }
