@@ -151,10 +151,13 @@ namespace MatchmakingProblem
 		/*group clients into sessions*/
 		void ClientGrouping(const int sessionSize, const int serverCapacity, const string algThirdStage);
 
-		/*compute final result based on the assignment and grouping results*/
-		void ComputePerformance(const int serverCapacity, double & sessionCount, double & totalServerCost, double & totalServerUtilization);
+		/*compute final result based on the assignment and grouping results (sessionListPerG)*/
+		void GetPerformance(const int serverCapacity, double & sessionCount, double & totalServerCost, double & totalServerUtilization);
 
-		/*legacy functions*/
+		/*analyze sessionListPerG*/
+		void GetSessionStat(double & R_G_colocation_ratio, double & average_R_count, double & max_G_occurrence_rate, double & max_R_occurrence_rate);
+
+		/*legacy functions (will use isGrouped)*/
 		/*void Random(const int sessionSize);
 		void Greedy_1(const int sessionSize);
 		void Greedy_2(const int sessionSize);

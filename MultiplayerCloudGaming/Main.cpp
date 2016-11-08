@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
-	printf("\n***total simulation running time: %.2f seconds***\n", std::difftime(clock(), startTime) / 1000);
+	std::printf("\n***total simulation running time: %.2f seconds***\n", std::difftime(clock(), startTime) / 1000);
 
 	return 0;
 }

@@ -1,2 +1,0 @@
-.csv file: column 1 -- solution name; column 2 -- average sessionCount; column 3 -- average serverCostPerSession; column 4 -- average serverUtilization;
-filename format: controlledCandidateClients.eligibleCandidateClientCount.latencyThreshold.serverCapacity
