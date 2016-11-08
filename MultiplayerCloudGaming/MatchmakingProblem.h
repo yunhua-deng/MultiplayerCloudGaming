@@ -78,6 +78,8 @@ namespace MatchmakingProblem
 	struct SessionType
 	{
 		vector<ClientType*> sessionClients;
+		int dc_g_id;
+		set<int> dc_r_id_set;
 	};
 
 	class MatchmakingProblemBase
@@ -112,17 +114,11 @@ namespace MatchmakingProblem
 	{
 	public:			
 		string outputDirectory = dataDirectory + "ParetoMatchingProblem\\";
-		void Simulate(
-			const bool shareCostAcrossSessions_input = true, 
-			const int clientCount = 100, const int latencyThreshold = 100, 
-			const int sessionSize = 10, const int serverCapacity = 4, 
-			const int simulationCount = 100);
+		void Simulate(const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int serverCapacity = 4, const int simulationCount = 100);
 	private:
 		vector<ClientType> candidateClients; // copy of a subset of globalClientList
 		vector<DatacenterType> candidateDatacenters; // copy of globalDatacenterList
-		vector<SessionType> allSessions;
-		
-		bool shareCostAcrossSessions; /*used by grouping and cost computation*/
+		map<int, vector<SessionType>> allSessions; // indexed by G
 		
 		void SearchEligibleDatacenters4Clients(const int latencyThreshold);
 		void GenerateCandidateClients(const int clientCount, const bool controlled = false);
@@ -155,8 +151,8 @@ namespace MatchmakingProblem
 		/*group clients into sessions*/
 		void ClientGrouping(const int sessionSize, const int serverCapacity, const string algThirdStage);
 
-		/*compute final cost based on the assignment and grouping results*/
-		double ComputeServerCost(const int serverCapacity);
+		/*compute final result based on the assignment and grouping results*/
+		void ComputePerformance(const int serverCapacity, double & sessionCount, double & totalServerCost, double & totalServerUtilization);
 
 		/*legacy functions*/
 		/*void Random(const int sessionSize);

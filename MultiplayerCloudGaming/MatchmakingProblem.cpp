@@ -1131,16 +1131,22 @@ namespace MatchmakingProblem
 			return;
 		}
 
-		/*random grouping*/
-		allSessions.clear();
-		for (const auto & dc_g : candidateDatacenters)
+		/*initialize*/
+		for (auto & dc_g : candidateDatacenters)
 		{
+			vector<SessionType> emptySessionList;
+			allSessions[dc_g.id] = emptySessionList;
+		}
+
+		/*random grouping*/
+		for (auto & dc_g : candidateDatacenters)
+		{			
 			SessionType oneSession;
 			for (auto & client : candidateClients)
 			{
 				if (oneSession.sessionClients.size() == sessionSize)
 				{
-					allSessions.push_back(oneSession);
+					allSessions.at(dc_g.id).push_back(oneSession);
 					oneSession.sessionClients.clear();
 				}
 				else if ((nullptr != client.assignedDatacenter_G) && (dc_g.id == client.assignedDatacenter_G->id))
@@ -1186,98 +1192,57 @@ namespace MatchmakingProblem
 			}
 		}
 
-		/*greedy grouping*/		
-		allSessions.clear();
-		if (shareCostAcrossSessions)
+		/*initialize*/
+		for (auto & dc_g : candidateDatacenters)
 		{
-			map<int, vector<ClientType*>> clientsToGroup;
-			for (auto & dc_g : candidateDatacenters)
-			{
-				vector<ClientType*> temp;
-				clientsToGroup[dc_g.id] = temp;
-			}
+			vector<SessionType> emptySessionList;
+			allSessions[dc_g.id] = emptySessionList;
+		}
 
-			vector<int> someNumberList(candidateDatacenters.size(), 0);
-			for (auto & dc_r : candidateDatacenters)
-			{				
-				if (dc_r.assignedClients_R.size() > serverCapacity)
-				{
-					int someNumber = int(std::floor(double(dc_r.assignedClients_R.size()) / serverCapacity) * serverCapacity);
-					for (int i = 0; i < someNumber; i++)
-					{						
-						clientsToGroup.at(dc_r.assignedClients_R.at(i)->assignedDatacenter_G->id).push_back(dc_r.assignedClients_R.at(i));
-					}
-					someNumberList.at(dc_r.id) = someNumber;
-				}
-			}
-			for (auto & dc_r : candidateDatacenters)
+		/*greedy grouping*/
+		map<int, vector<ClientType*>> clientsToGroup;
+		for (auto & dc_g : candidateDatacenters)
+		{
+			vector<ClientType*> temp;
+			clientsToGroup[dc_g.id] = temp;
+		}
+		vector<int> someNumberList(candidateDatacenters.size(), 0);
+		for (auto & dc_r : candidateDatacenters)
+		{
+			if (dc_r.assignedClients_R.size() > serverCapacity)
 			{
-				for (int i = someNumberList.at(dc_r.id); i < dc_r.assignedClients_R.size(); i++)
+				int someNumber = int(std::floor(double(dc_r.assignedClients_R.size()) / serverCapacity) * serverCapacity);
+				for (int i = 0; i < someNumber; i++)
 				{
 					clientsToGroup.at(dc_r.assignedClients_R.at(i)->assignedDatacenter_G->id).push_back(dc_r.assignedClients_R.at(i));
 				}
-			}
-
-			for (auto & dc_g : candidateDatacenters)
-			{
-				SessionType oneSession;
-				for (auto & client : clientsToGroup.at(dc_g.id))
-				{
-					if (oneSession.sessionClients.size() == sessionSize)
-					{
-						allSessions.push_back(oneSession);
-						oneSession.sessionClients.clear();
-					}
-					else
-					{
-						oneSession.sessionClients.push_back(client);
-					}
-				}
+				someNumberList.at(dc_r.id) = someNumber;
 			}
 		}
-		else
+		for (auto & dc_r : candidateDatacenters)
 		{
-			for (auto & dc_g : candidateDatacenters)
+			for (int i = someNumberList.at(dc_r.id); i < dc_r.assignedClients_R.size(); i++)
 			{
-				vector<ClientType*> clientsToGroup;
-				vector<int> someNumberList(candidateDatacenters.size(), 0);
-				for (auto & dc_r : candidateDatacenters)
+				clientsToGroup.at(dc_r.assignedClients_R.at(i)->assignedDatacenter_G->id).push_back(dc_r.assignedClients_R.at(i));
+			}
+		}
+		for (auto & dc_g : candidateDatacenters)
+		{			
+			SessionType oneSession;
+			for (auto & client : clientsToGroup.at(dc_g.id))
+			{
+				if (oneSession.sessionClients.size() == sessionSize)
 				{
-					if (dc_r.assignedClients_R.size() > serverCapacity)
-					{
-						int someNumber = int(std::floor(double(dc_r.assignedClients_R.size()) / serverCapacity) * serverCapacity);						
-						for (int i = 0; i < someNumber; i++)
-						{
-							clientsToGroup.push_back(dc_r.assignedClients_R.at(i));
-						}
-						someNumberList.at(dc_r.id) = someNumber;
-					}
+					allSessions.at(dc_g.id).push_back(oneSession);
+					oneSession.sessionClients.clear();
 				}
-
-				for (auto & dc_r : candidateDatacenters)
+				else
 				{
-					for (int i = someNumberList.at(dc_r.id); i < dc_r.assignedClients_R.size(); i++)
-					{
-						clientsToGroup.push_back(dc_r.assignedClients_R.at(i));
-					}
-				}				
-
-				SessionType oneSession;
-				for (auto & client : clientsToGroup)
-				{
-					if (oneSession.sessionClients.size() == sessionSize)
-					{
-						allSessions.push_back(oneSession);
-						oneSession.sessionClients.clear();
-					}
-					else if (dc_g.id == client->assignedDatacenter_G->id)
-					{
-						oneSession.sessionClients.push_back(client);
-					}
+					oneSession.sessionClients.push_back(client);
 				}
 			}
 		}
-
+			
 		/*marked*/
 		Grouping_Completed = true;
 	}
@@ -1296,55 +1261,51 @@ namespace MatchmakingProblem
 		else if ("Grouping_Greedy" == algThirdStage) Grouping_Greedy(sessionSize, serverCapacity);
 	}
 
-	double ParetoMatchingProblem::ComputeServerCost(const int serverCapacity)
+	void ParetoMatchingProblem::ComputePerformance(const int serverCapacity, double & sessionCount, double & totalServerCost, double & totalServerUtilization)
 	{
 		/*ensure G_Assignment, R_Assignment, and Grouping done*/
 		if (!Assignment_G_Completed || !Assignment_R_Completed || !Grouping_Completed)
 		{
 			printf("\n***ERROR: Assignment_G_Completed, Assignment_R_Completed, or Grouping_Completed is false***\n");
 			cin.get();
-			return -1;
+			return;
 		}
 		
-		double totalCost = 0;
-		
-		if (shareCostAcrossSessions)
+		/*initialize*/
+		sessionCount = 0;
+		totalServerCost = 0;
+		double totalGroupedClientCount = 0;
+		double totalServerCount = 0;
+		map<int, double> assignedClientCount_R;
+		for (auto & dc_r : candidateDatacenters)
 		{
-			vector<int> numberOfAssignedClients_R(candidateDatacenters.size(), 0);
-			for (const auto & session : allSessions)
-			{
-				for (const auto & client : session.sessionClients)
-				{
-					numberOfAssignedClients_R.at(client->assignedDatacenter_R->id)++;
-				}
-			}
-			for (int i = 0; i < candidateDatacenters.size(); i++)
-			{
-				int numberOfServers_R = (int)std::ceil((double)numberOfAssignedClients_R.at(i) / serverCapacity);
-				totalCost += numberOfServers_R * candidateDatacenters.at(i).priceServer;
-			}
-		}
-		else
-		{
-			for (const auto & session : allSessions)
-			{
-				vector<int> numberOfAssignedClients_R(candidateDatacenters.size(), 0);
-				for (const auto & client : session.sessionClients)
-				{
-					numberOfAssignedClients_R.at(client->assignedDatacenter_R->id)++;
-				}
-				for (int i = 0; i < candidateDatacenters.size(); i++)
-				{
-					int numberOfServers_R = (int)std::ceil((double)numberOfAssignedClients_R.at(i) / serverCapacity);
-					totalCost += numberOfServers_R * candidateDatacenters.at(i).priceServer;
-				}
-			}
+			assignedClientCount_R[dc_r.id] = 0;
 		}
 
-		return totalCost;
+		/*compute*/
+		for (auto & sessionListPerG : allSessions)
+		{
+			sessionCount += sessionListPerG.second.size();
+
+			for (auto & session : sessionListPerG.second)
+			{
+				for (const auto & client : session.sessionClients)
+				{
+					assignedClientCount_R.at(client->assignedDatacenter_R->id)++;
+					totalGroupedClientCount++;
+				}
+			}
+		}
+		for (auto & dc_r : candidateDatacenters)
+		{
+			double serverCount = std::ceil(assignedClientCount_R.at(dc_r.id) / serverCapacity);
+			totalServerCost += serverCount * dc_r.priceServer;
+			totalServerCount += serverCount;
+		}
+		totalServerUtilization = totalGroupedClientCount / (totalServerCount * serverCapacity);
 	}
 
-	void ParetoMatchingProblem::Simulate(const bool shareCostAcrossSessions_input, const int clientCount, const int latencyThreshold, const int sessionSize, const int serverCapacity, const int simulationCount)
+	void ParetoMatchingProblem::Simulate(const int clientCount, const int latencyThreshold, const int sessionSize, const int serverCapacity, const int simulationCount)
 	{	
 		/*fixing the random seed such that every run of the Simulate() will have the same random candidateClients in each round*/
 		srand(0);
@@ -1372,15 +1333,12 @@ namespace MatchmakingProblem
 			printf("\n***ERROR: totalEligibleClientCount < clientCount***\n");
 			cin.get();
 			return;
-		}
-
-		/*parameter value assignment*/
-		shareCostAcrossSessions = shareCostAcrossSessions_input;	
+		}			
 
 		/*stuff to record performance results*/
 		map<string, vector<double>> sessionCountTable;
-		map<string, vector<double>> averageCostTable;
-		map<string, vector<double>> computationTimeTable;
+		map<string, vector<double>> serverCostTable;
+		map<string, vector<double>> serverUtilizationTable;		
 
 		/*run simulation round by round (each round corresponds to a set of randomly selected candidateClients)*/
 		for (int round = 1; round <= simulationCount; round++)
@@ -1401,44 +1359,32 @@ namespace MatchmakingProblem
 					else if ("R_Assignment_Random" == algSecondStage || "R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage) { continue; }
 					
 					/*finally, the algThirdStage*/
-					for (string algThirdStage : { "Grouping_Random", "Grouping_Greedy" })
+					for (string algThirdStage : { "Grouping_Random" })
 					{
-						/*run one combination of three algorithms for three stages*/
-						auto startTime = clock();
+						/*run one combination of three algorithms for three stages*/						
 						ResetStageFlag();
 						ClientAssignment(sessionSize, serverCapacity, algFirstStage, algSecondStage);
 						ClientGrouping(sessionSize, serverCapacity, algThirdStage);
-						auto totalCost = ComputeServerCost(serverCapacity);
-						auto computationTime = std::difftime(clock(), startTime);
+						double sessionCount, totalServerCost, totalServerUtilization;
+						ComputePerformance(serverCapacity, sessionCount, totalServerCost, totalServerUtilization);
 
 						/*record performance data*/
-						auto solutionName = algFirstStage + "." + algSecondStage + "." + algThirdStage;
-						sessionCountTable[solutionName].push_back((double)allSessions.size());
-						averageCostTable[solutionName].push_back(totalCost / allSessions.size());
-						computationTimeTable[solutionName].push_back(computationTime);
+						auto solutionName = algFirstStage + "." + algSecondStage + "." + algThirdStage;						
+						sessionCountTable[solutionName].push_back(sessionCount);
+						serverCostTable[solutionName].push_back(totalServerCost / sessionCount);
+						serverUtilizationTable[solutionName].push_back(totalServerUtilization);
 					}
 				}
-			}		
-		}
+			}
+		}		
 
 		/*dump performance results to disk files*/
-		string settingPerTest = outputDirectory + std::to_string(shareCostAcrossSessions_input) + "." + std::to_string(clientCount) + "." + std::to_string(latencyThreshold) + "." + std::to_string(sessionSize) + "." + std::to_string(serverCapacity) + ".";
-		auto dataFile = ofstream(settingPerTest + "sessionCount.csv");
+		string settingPerTest = outputDirectory + std::to_string(clientCount) + "." + std::to_string(latencyThreshold) + "." + std::to_string(sessionSize) + "." + std::to_string(serverCapacity);
+		auto dataFile = ofstream(settingPerTest + ".csv");				
+		dataFile << "solutionName,sessionCount,serverCost,serverUtilization\n"; // header line
 		for (auto & it : sessionCountTable)
 		{
-			dataFile << it.first << "," << GetMeanValue(it.second) << "," << GetStdValue(it.second) << "\n";
-		}
-		dataFile.close();
-		dataFile = ofstream(settingPerTest + "serverCost.csv");
-		for (auto & it : averageCostTable)
-		{
-			dataFile << it.first << "," << GetMeanValue(it.second) << "," << GetStdValue(it.second) << "\n";
-		}
-		dataFile.close();
-		dataFile = ofstream(settingPerTest + "computationTime.csv");
-		for (auto & it : computationTimeTable)
-		{
-			dataFile << it.first << "," << GetMeanValue(it.second) << "," << GetStdValue(it.second) << "\n";
+			dataFile << it.first << "," << GetMeanValue(it.second) << "," << GetMeanValue(serverCostTable.at(it.first)) << "," << GetMeanValue(serverUtilizationTable.at(it.first)) << "\n";
 		}
 		dataFile.close();
 	}

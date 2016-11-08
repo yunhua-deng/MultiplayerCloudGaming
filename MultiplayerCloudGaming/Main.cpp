@@ -34,19 +34,16 @@ int main(int argc, char *argv[])
 	auto simulator = MatchmakingProblem::ParetoMatchingProblem();
 	simulator.Initialize();
 	_mkdir(simulator.outputDirectory.c_str());
-	for (bool sharedCostAcrossSessions : { false, true })
+	for (int clientCount : { 100, 500, 1000 })
 	{
-		for (int clientCount : { 100, 500 })
+		for (int latencyThreshold : { 50, 100 })
 		{
-			for (int latencyThreshold : { 50, 100 })
+			for (int sessionSize : { 10 })
 			{
-				for (int sessionSize : { 10 })
+				for (int serverCapacity : { 4 })
 				{
-					for (int serverCapacity : { 1, 4 })
-					{
-						cout << sharedCostAcrossSessions << "." << clientCount << "." << latencyThreshold << "." << sessionSize << "." << serverCapacity << "\n";
-						simulator.Simulate(sharedCostAcrossSessions, clientCount, latencyThreshold, sessionSize, serverCapacity);
-					}
+					cout << "run tests with setting: " << clientCount << "." << latencyThreshold << "." << sessionSize << "." << serverCapacity << "\n";
+					simulator.Simulate(clientCount, latencyThreshold, sessionSize, serverCapacity);
 				}
 			}
 		}
