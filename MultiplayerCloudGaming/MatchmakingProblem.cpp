@@ -1135,7 +1135,7 @@ namespace MatchmakingProblem
 			return;
 		}
 
-		/*initialize*/
+		/*initialize (reset sessionListPerG)*/
 		for (auto & dc_g : candidateDatacenters)
 		{
 			vector<SessionType> emptySessionList;
@@ -1180,6 +1180,13 @@ namespace MatchmakingProblem
 			std::printf("\n***ERROR: already grouped***\n");
 			cin.get();
 			return;
+		}		
+
+		/*initialize (reset sessionListPerG)*/
+		for (auto & dc_g : candidateDatacenters)
+		{
+			vector<SessionType> emptySessionList;
+			sessionListPerG[dc_g.id] = emptySessionList;
 		}
 
 		/*update each dc_r's assignedClients_R because some of the clients may not be assigned to any G*/
@@ -1194,13 +1201,6 @@ namespace MatchmakingProblem
 					dc_r.assignedClients_R.push_back(client);
 				}
 			}
-		}
-
-		/*initialize*/
-		for (auto & dc_g : candidateDatacenters)
-		{
-			vector<SessionType> emptySessionList;
-			sessionListPerG[dc_g.id] = emptySessionList;
 		}
 
 		/*grouping*/
@@ -1262,7 +1262,7 @@ namespace MatchmakingProblem
 		else if ("Grouping_Greedy" == algThirdStage) Grouping_Greedy(sessionSize, serverCapacity);
 	}
 
-	void ParetoMatchingProblem::GetPerformance(const int serverCapacity, double & sessionCount, double & totalServerCost, double & totalServerUtilization)
+	void ParetoMatchingProblem::PerformanceMeasurement(PerformanceType & performanceMeasurement, const string solutionName, const int serverCapacity)
 	{
 		/*ensure G_Assignment, R_Assignment, and Grouping completed*/
 		if (!Assignment_G_Completed || !Assignment_R_Completed || !Grouping_Completed)
@@ -1270,20 +1270,19 @@ namespace MatchmakingProblem
 			std::printf("\n***ERROR: Assignment_G_Completed, Assignment_R_Completed, or Grouping_Completed is false***\n");
 			cin.get();
 			return;
-		}
+		}				
 		
-		/*initialize*/
-		sessionCount = 0;
-		totalServerCost = 0;
-		double totalGroupedClientCount = 0;
-		double totalServerCount = 0;
-		map<int, double> assignedClientCount_R;
-		for (auto & dc_r : candidateDatacenters)
-		{
-			assignedClientCount_R[dc_r.id] = 0;
-		}
+		/*stuff to record*/
+		double sessionCount = 0, serverCost = 0, serverUtilization = 0, R_G_colocation_ratio = 0, G_count_allSessions = 0, R_count_perSession = 0;
 
-		/*calculate*/
+		/*stuff for assistance*/
+		double groupedClientCount = 0, serverCount = 0, colocatedSessionCount = 0;
+		map<int, double> assignedClientCount_R;		
+		for (auto & dc_r : candidateDatacenters) { assignedClientCount_R[dc_r.id] = 0; }		
+		vector<double> R_count_list;
+		set<int> dc_g_id_set;
+		
+		/*measurement*/
 		for (auto & sessionList : sessionListPerG)
 		{
 			for (auto & session : sessionList.second)
@@ -1292,74 +1291,38 @@ namespace MatchmakingProblem
 				for (auto & client : session.sessionClients)
 				{
 					assignedClientCount_R.at(client->assignedDatacenter_R->id)++;
-					totalGroupedClientCount++;
-				}
-			}
-		}
-		for (auto & dc_r : candidateDatacenters)
-		{
-			double serverCount = std::ceil(assignedClientCount_R.at(dc_r.id) / serverCapacity);
-			totalServerCost += serverCount * dc_r.priceServer;
-			totalServerCount += serverCount;
-		}
-		totalServerUtilization = totalGroupedClientCount / (totalServerCount * serverCapacity);
-	}
+					groupedClientCount++;
 
-	void ParetoMatchingProblem::GetSessionStat(double & R_G_colocation_ratio, double & average_R_count, double & max_G_occurrence_rate, double & max_R_occurrence_rate)
-	{		
-		/*ensure G_Assignment, R_Assignment, and Grouping completed*/
-		if (!Assignment_G_Completed || !Assignment_R_Completed || !Grouping_Completed)
-		{
-			std::printf("\n***ERROR: Assignment_G_Completed, Assignment_R_Completed, or Grouping_Completed is false***\n");
-			cin.get();
-			return;
-		}
-
-		/*calculate*/
-		double totalSessionCount = 0;
-		double colocatedSessionCount = 0;
-		vector<double> R_count_list;
-		map<int, double> G_occurence;
-		map<int, double> R_occurence;
-		for (auto dc : candidateDatacenters)
-		{
-			G_occurence[dc.id] = 0;
-			R_occurence[dc.id] = 0;
-		}
-		for (auto & sessionList : sessionListPerG)
-		{
-			for (auto & session : sessionList.second)
-			{
-				totalSessionCount++;
-				for (auto & client : session.sessionClients)
-				{
 					session.dc_g_id = client->assignedDatacenter_G->id;
-					session.dc_r_id_set.insert(client->assignedDatacenter_R->id);
+					session.dc_r_id_set.insert(client->assignedDatacenter_R->id);					
 				}
 				if (1 == session.dc_r_id_set.size() && (session.dc_r_id_set.find(session.dc_g_id) != session.dc_r_id_set.end()))
 				{
 					colocatedSessionCount++;
 				}
 				R_count_list.push_back((double)session.dc_r_id_set.size());
-				G_occurence.at(session.dc_g_id)++;
-				for (auto it : session.dc_r_id_set)
-				{
-					R_occurence.at(it)++;
-				}
+				dc_g_id_set.insert(session.dc_g_id);
 			}
 		}
-		R_G_colocation_ratio = colocatedSessionCount / totalSessionCount;
-		average_R_count = GetMeanValue(R_count_list);
-		double max_G_occurrence = G_occurence.at(candidateDatacenters.front().id);
-		double max_R_occurrence = R_occurence.at(candidateDatacenters.front().id);
-		for (auto dc : candidateDatacenters)
+		for (auto & dc_r : candidateDatacenters)
 		{
-			if (G_occurence.at(dc.id) > max_G_occurrence) max_G_occurrence = G_occurence.at(dc.id);
-			if (R_occurence.at(dc.id) > max_R_occurrence) max_R_occurrence = R_occurence.at(dc.id);
+			double serverCount_R = std::ceil(assignedClientCount_R.at(dc_r.id) / serverCapacity);			
+			serverCount += serverCount_R;
+			serverCost += (serverCount_R * dc_r.priceServer);
 		}
-		max_G_occurrence_rate = max_G_occurrence / totalSessionCount;
-		max_R_occurrence_rate = max_R_occurrence / totalSessionCount;	
-	}
+		serverUtilization = groupedClientCount / (serverCount * serverCapacity);
+		R_G_colocation_ratio = colocatedSessionCount / sessionCount;
+		G_count_allSessions = (double)dc_g_id_set.size();
+		R_count_perSession = GetMeanValue(R_count_list);
+		
+		/*record*/
+		performanceMeasurement.sessionCountTable[solutionName].push_back(sessionCount);
+		performanceMeasurement.serverCostTable[solutionName].push_back(serverCost / sessionCount); // average
+		performanceMeasurement.serverUtilizationTable[solutionName].push_back(serverUtilization);
+		performanceMeasurement.R_G_colocation_ratio_table[solutionName].push_back(R_G_colocation_ratio);
+		performanceMeasurement.G_count_allSessions_table[solutionName].push_back(G_count_allSessions);
+		performanceMeasurement.R_count_perSession_table[solutionName].push_back(R_count_perSession);
+	}	
 
 	void ParetoMatchingProblem::Simulate(const bool controlledCandidateClients, const int clientCount, const int latencyThreshold, const int sessionSize, const int serverCapacity, const int simulationCount)
 	{	
@@ -1391,16 +1354,10 @@ namespace MatchmakingProblem
 			std::printf("\n***ERROR: totalEligibleClientCount < clientCount***\n");
 			cin.get();
 			return;
-		}
+		}		
 
-		/*stuff to record results*/
-		map<string, vector<double>> sessionCountTable;
-		map<string, vector<double>> serverCostTable;
-		map<string, vector<double>> serverUtilizationTable;
-		map<string, vector<double>> R_G_colocation_ratio_table;
-		map<string, vector<double>> average_R_count_table;
-		map<string, vector<double>> max_G_occurrence_rate_table;
-		map<string, vector<double>> max_R_occurrence_rate_table;
+		/*staff to record performance*/
+		auto performanceMeasurement = PerformanceType();
 
 		/*run simulation round by round (each round corresponds to a set of randomly selected candidateClients)*/
 		for (int round = 1; round <= simulationCount; round++)
@@ -1426,21 +1383,11 @@ namespace MatchmakingProblem
 						/*run one combination of three algorithms for three stages*/						
 						ResetStageFlag();
 						ClientAssignment(sessionSize, serverCapacity, algFirstStage, algSecondStage);
-						ClientGrouping(sessionSize, serverCapacity, algThirdStage);
-						double sessionCount = 0, totalServerCost = 0, totalServerUtilization = 0;
-						GetPerformance(serverCapacity, sessionCount, totalServerCost, totalServerUtilization);
-						double R_G_colocation_ratio = 0, average_R_count = 0, max_G_occurrence_rate = 0, max_R_occurrence_rate = 0;
-						GetSessionStat(R_G_colocation_ratio, average_R_count, max_G_occurrence_rate, max_R_occurrence_rate);
+						ClientGrouping(sessionSize, serverCapacity, algThirdStage);						
 
-						/*record data*/
+						/*measure and record performance*/
 						auto solutionName = algFirstStage + "." + algSecondStage + "." + algThirdStage;						
-						sessionCountTable[solutionName].push_back(sessionCount);
-						serverCostTable[solutionName].push_back(totalServerCost / sessionCount);
-						serverUtilizationTable[solutionName].push_back(totalServerUtilization);
-						R_G_colocation_ratio_table[solutionName].push_back(R_G_colocation_ratio);
-						average_R_count_table[solutionName].push_back(average_R_count);
-						max_G_occurrence_rate_table[solutionName].push_back(max_G_occurrence_rate);
-						max_R_occurrence_rate_table[solutionName].push_back(max_R_occurrence_rate);
+						PerformanceMeasurement(performanceMeasurement, solutionName, serverCapacity);
 					}
 				}
 			}
@@ -1449,18 +1396,16 @@ namespace MatchmakingProblem
 		/*dump recorded data to disk files*/
 		string settingPerTest = outputDirectory + std::to_string(controlledCandidateClients) + "." + std::to_string(clientCount) + "." + std::to_string(latencyThreshold) + "." + std::to_string(sessionSize) + "." + std::to_string(serverCapacity);
 		auto dataFile = ofstream(settingPerTest + ".csv");				
-		dataFile << "solutionName,sessionCount,serverCost,serverUtilization,R_G_colocation_ratio,average_R_count,max_G_occurrence_rate,max_R_occurrence_rate\n"; // header line
-		for (auto & it : sessionCountTable)
+		dataFile << "solutionName,sessionCount,serverCost,serverUtilization,R_G_colocation_ratio,G_count_allSessions,R_count_perSession\n"; // header line
+		for (auto & it : performanceMeasurement.sessionCountTable)
 		{
 			dataFile << it.first << "," 
-				<< GetMeanValue(it.second) << "," 
-				<< GetMeanValue(serverCostTable.at(it.first)) << "," 
-				<< GetMeanValue(serverUtilizationTable.at(it.first)) << ","
-				<< GetMeanValue(R_G_colocation_ratio_table.at(it.first)) << ","
-				<< GetMeanValue(average_R_count_table.at(it.first)) << ","
-				<< GetMeanValue(max_G_occurrence_rate_table.at(it.first)) << ","
-				<< GetMeanValue(max_R_occurrence_rate_table.at(it.first)) << ","
-				<< "\n";
+				<< GetMeanValue(performanceMeasurement.sessionCountTable.at(it.first)) << ","
+				<< GetMeanValue(performanceMeasurement.serverCostTable.at(it.first)) << ","
+				<< GetMeanValue(performanceMeasurement.serverUtilizationTable.at(it.first)) << ","
+				<< GetMeanValue(performanceMeasurement.R_G_colocation_ratio_table.at(it.first)) << ","				
+				<< GetMeanValue(performanceMeasurement.G_count_allSessions_table.at(it.first)) << ","
+				<< GetMeanValue(performanceMeasurement.R_count_perSession_table.at(it.first)) << "\n";
 		}
 		dataFile.close();
 

@@ -6,7 +6,6 @@ namespace MatchmakingProblem
 {	
 	struct ClientType;
 	struct DatacenterType;
-	struct SessionType;
 	
 	struct ClientType
 	{
@@ -82,6 +81,17 @@ namespace MatchmakingProblem
 		set<int> dc_r_id_set;
 	};
 
+	struct PerformanceType
+	{
+		map<string, vector<double>> 
+			sessionCountTable, 
+			serverCostTable, 
+			serverUtilizationTable, 
+			R_G_colocation_ratio_table, 
+			G_count_allSessions_table, 
+			R_count_perSession_table;
+	};
+
 	class MatchmakingProblemBase
 	{			
 	public:
@@ -152,11 +162,8 @@ namespace MatchmakingProblem
 		void ClientGrouping(const int sessionSize, const int serverCapacity, const string algThirdStage);
 
 		/*compute final result based on the assignment and grouping results (sessionListPerG)*/
-		void GetPerformance(const int serverCapacity, double & sessionCount, double & totalServerCost, double & totalServerUtilization);
-
-		/*analyze sessionListPerG*/
-		void GetSessionStat(double & R_G_colocation_ratio, double & average_R_count, double & max_G_occurrence_rate, double & max_R_occurrence_rate);
-
+		void PerformanceMeasurement(PerformanceType & performanceMeasurement, const string solutionName, const int serverCapacity);
+		
 		/*legacy functions (will use isGrouped)*/
 		/*void Random(const int sessionSize);
 		void Greedy_1(const int sessionSize);
