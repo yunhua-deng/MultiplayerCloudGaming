@@ -1,9 +1,0 @@
-solutionName,sessionCount,serverCost,serverUtilization,R_G_colocation_ratio,G_count_allSessions,R_count_perSession
-G_Assignment_Layered.R_Assignment_LCW.Grouping_Greedy,6.72,2.2717,0.939048,0.896131,4.37,1.10387
-G_Assignment_Layered.R_Assignment_LSP.Grouping_Greedy,6.72,2.35192,0.894273,0.736869,4.37,1.2617
-G_Assignment_Simple.R_Assignment_LCW.Grouping_Greedy,6.73,2.26751,0.940424,0.902321,4.37,1.09768
-G_Assignment_Simple.R_Assignment_LSP.Grouping_Greedy,6.73,2.34792,0.895616,0.739905,4.37,1.25867
-R_Assignment_LCW.G_Assignment_Layered.Grouping_Greedy,6.32,2.33482,0.91319,0.898952,4.62,1.10105
-R_Assignment_LCW.G_Assignment_Simple.Grouping_Greedy,6.26,2.34851,0.908664,0.857095,4.48,1.1429
-R_Assignment_LSP.G_Assignment_Layered.Grouping_Greedy,6.31,2.31958,0.902228,0.823429,4.93,1.17514
-R_Assignment_LSP.G_Assignment_Simple.Grouping_Greedy,6.16,2.33394,0.898688,0.799143,4.7,1.19943
