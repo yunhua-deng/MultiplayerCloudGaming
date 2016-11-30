@@ -19,7 +19,6 @@ namespace MatchmakingProblem
 		map<int, vector<DatacenterType*>> eligibleDatacenters_G_indexed_by_R;
 		DatacenterType* assignedDatacenter_G = nullptr;
 		DatacenterType* assignedDatacenter_R = nullptr;
-		bool isGrouped = false; /*used by legacy grouping functions only*/
 		
 		ClientType(int givenID)
 		{
@@ -124,13 +123,13 @@ namespace MatchmakingProblem
 	{
 	public:			
 		string outputDirectory = dataDirectory + "ParetoMatchingProblem\\";
-		void Simulate(const bool controlledCandidateClients = false, const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int serverCapacity = 4, const int simulationCount = 100);
+		void Simulate(const bool regionControl = false, const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int serverCapacity = 4, const int simulationCount = 100);
 	private:
 		vector<ClientType> candidateClients; // copy of a subset of globalClientList
 		vector<DatacenterType> candidateDatacenters; // copy of globalDatacenterList
 		map<int, vector<SessionType>> sessionListPerG; // indexed by G
 		
-		void SearchEligibleDatacenters4Clients(const int latencyThreshold);
+		double SearchEligibleDatacenters4Clients(const int latencyThreshold);
 		void GenerateCandidateClients(const int clientCount, const bool controlled);
 
 		/*stage flags (need to be reset for each round)*/
@@ -162,12 +161,6 @@ namespace MatchmakingProblem
 		void ClientGrouping(const int sessionSize, const int serverCapacity, const string algThirdStage);
 
 		/*compute final result based on the assignment and grouping results (sessionListPerG)*/
-		void PerformanceMeasurement(PerformanceType & performanceMeasurement, const string solutionName, const int serverCapacity);
-		
-		/*legacy functions (will use isGrouped)*/
-		/*void Random(const int sessionSize);
-		void Greedy_1(const int sessionSize);
-		void Greedy_2(const int sessionSize);
-		void Greedy_3(const int sessionSize);*/
+		void PerformanceMeasurement(PerformanceType & performanceMeasurement, const string solutionName, const int serverCapacity);		
 	};
 }

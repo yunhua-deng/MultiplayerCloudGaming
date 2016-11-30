@@ -1,7 +1,6 @@
 #include "ServerAllocationProblem.h"
 #include "MatchmakingProblem.h"
 
-
 int main(int argc, char *argv[])
 {
 	/*ServerAllocationProblem*/	
@@ -39,11 +38,11 @@ int main(int argc, char *argv[])
 	{
 		for (int clientCount : { 100, 500 })
 		{
-			for (int latencyThreshold : { 50, 100 })
+			for (int latencyThreshold : { 25, 50, 100 })
 			{
 				for (int sessionSize : { 10 })
 				{
-					for (int serverCapacity : { 4 })
+					for (int serverCapacity : { 4, 8 })
 					{
 						cout << "\nSimulate() with setting: " << controlled << "." << clientCount << "." << latencyThreshold << "." << sessionSize << "." << serverCapacity << "\n";
 						simulator.Simulate(controlled, clientCount, latencyThreshold, sessionSize, serverCapacity, 100);
