@@ -1,6 +1,8 @@
 #include "ServerAllocationProblem.h"
 #include "MatchmakingProblem.h"
 
+using namespace MatchmakingProblem;
+
 int main(int argc, char *argv[])
 {
 	/*ServerAllocationProblem*/	
@@ -31,10 +33,10 @@ int main(int argc, char *argv[])
 
 	/*ParetoMatchingProblem*/
 	auto startTime = clock();
-	auto simulator = MatchmakingProblem::ParetoMatchingProblem();
+	auto simulator = ParetoMatchingProblem();
 	simulator.Initialize();
 	_mkdir(simulator.outputDirectory.c_str());
-	for (bool controlled : { false, true })
+	for (bool regionControl : { false, true })
 	{
 		for (int clientCount : { 100, 500 })
 		{
@@ -44,8 +46,8 @@ int main(int argc, char *argv[])
 				{
 					for (int serverCapacity : { 5 })
 					{
-						cout << "\nSimulate() with setting: " << controlled << "." << clientCount << "." << latencyThreshold << "." << sessionSize << "." << serverCapacity << "\n";
-						simulator.Simulate(controlled, clientCount, latencyThreshold, sessionSize, serverCapacity, 100);
+						cout << "\nSimulate() with setting: " << regionControl << "." << clientCount << "." << latencyThreshold << "." << sessionSize << "." << serverCapacity << "\n";
+						simulator.Simulate(Setting(regionControl, clientCount, latencyThreshold, sessionSize, serverCapacity, 1000));
 					}
 				}
 			}

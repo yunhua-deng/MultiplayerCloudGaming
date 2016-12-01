@@ -509,16 +509,17 @@ namespace MatchmakingProblem
 		return eligibleClientRate;
 	}
 
-	void ParetoMatchingProblem::GenerateCandidateClients(const int clientCount, const bool controlled)
+	vector<ClientType> ParetoMatchingProblem::GenerateCandidateClients(const int clientCount, const bool regionControl)
 	{
-		candidateClients.clear();		
-		if (controlled)
+		vector<ClientType> candidateClientList;
+
+		if (regionControl)
 		{
-			while (candidateClients.size() < clientCount)
+			while (candidateClientList.size() < clientCount)
 			{
 				for (auto & cluster : clientCluster)
 				{
-					if (candidateClients.size() < clientCount)
+					if (candidateClientList.size() < clientCount)
 					{
 						while (true)
 						{
@@ -526,7 +527,7 @@ namespace MatchmakingProblem
 							auto oneClient = globalClientList.at(cluster.second.at(clientIndex));
 							if (!oneClient.eligibleDatacenters_G.empty())
 							{
-								candidateClients.push_back(oneClient);
+								candidateClientList.push_back(oneClient);
 								break;
 							}
 						}
@@ -536,19 +537,19 @@ namespace MatchmakingProblem
 		}
 		else
 		{
-			while (candidateClients.size() < clientCount)
+			while (candidateClientList.size() < clientCount)
 			{
 				auto clientIndex = GenerateRandomIndex(globalClientList.size());
 				auto oneClient = globalClientList.at(clientIndex);
 				if (!oneClient.eligibleDatacenters_G.empty()) 
 				{ 
-					candidateClients.push_back(oneClient); 
+					candidateClientList.push_back(oneClient); 
 				}
 			}
 		}
 
 		/*double-check*/
-		for (auto & client : candidateClients)
+		for (auto & client : candidateClientList)
 		{
 			if (client.eligibleDatacenters_G.empty())
 			{
@@ -598,12 +599,14 @@ namespace MatchmakingProblem
 		}
 
 		/*just in case*/
-		if (candidateClients.size() != clientCount)
+		if (candidateClientList.size() != clientCount)
 		{
-			std::printf("\n***ERROR: candidateClients.size() != clientCount***\n");
+			std::printf("\n***ERROR: candidateClientList.size() != clientCount***\n");
 			cin.get();
-			return;
+			return vector<ClientType>();
 		}
+
+		return candidateClientList;
 	}
 
 	void ParetoMatchingProblem::ResetStageFlag()
@@ -1301,7 +1304,7 @@ namespace MatchmakingProblem
 			return;
 		}
 
-		/* Grouping_Greedy() only applicable to random assignment (G or R) */
+		/* Grouping_Greedy() is only effective on G_Assignment_Random() */
 		if ("Grouping_Random" == algThirdStage) Grouping_Random(sessionSize);
 		else if ("Grouping_Greedy" == algThirdStage) Grouping_Greedy(sessionSize, serverCapacity);
 	}
@@ -1368,7 +1371,7 @@ namespace MatchmakingProblem
 		performanceMeasurement.R_count_perSession_table[solutionName].push_back(R_count_perSession);
 	}	
 
-	void ParetoMatchingProblem::Simulate(const bool regionControl, const int clientCount, const int latencyThreshold, const int sessionSize, const int serverCapacity, const int simulationCount)
+	void ParetoMatchingProblem::Simulate(const Setting & sim_setting)
 	{	
 		auto startTime = clock();
 		
@@ -1376,7 +1379,7 @@ namespace MatchmakingProblem
 		srand(0);
 		
 		/*handle bad parameters*/
-		if (clientCount < sessionSize)
+		if (sim_setting.clientCount < sim_setting.sessionSize)
 		{
 			std::printf("\n***ERROR: clientCount < sessionSize***\n");
 			cin.get();
@@ -1387,8 +1390,8 @@ namespace MatchmakingProblem
 		candidateDatacenters = globalDatacenterList;
 
 		/*search eligible datacenters from candidateDatacenters for every client in globalClientList*/
-		double eligibleClientRate = SearchEligibleDatacenters4Clients(latencyThreshold);		
-		if (eligibleClientRate * globalClientList.size() < clientCount)
+		double eligibleClientRate = SearchEligibleDatacenters4Clients(sim_setting.latencyThreshold);
+		if (eligibleClientRate * globalClientList.size() < sim_setting.clientCount)
 		{
 			std::printf("\n***ERROR: totalEligibleClientCount < clientCount***\n");
 			cin.get();
@@ -1398,41 +1401,50 @@ namespace MatchmakingProblem
 		/*staff to record performance*/
 		auto performanceMeasurement = PerformanceType();
 
-		/*run simulation round by round (each round corresponds to a set of randomly selected candidateClients)*/		
-		for (int round = 1; round <= simulationCount; round++)
+		/*run after SearchEligibleDatacenters4Clients() because we only consider eligible clients*/
+		vector<vector<ClientType>> candidateClients4AllRounds;		
+		while (candidateClients4AllRounds.size() < sim_setting.simulationCount)
 		{
-			/*generate new candidateClients*/
-			GenerateCandidateClients(clientCount, regionControl);
+			candidateClients4AllRounds.push_back(GenerateCandidateClients(sim_setting.clientCount, sim_setting.regionControl));
+		}
 
-			for (string algFirstStage : { "G_Assignment_Simple", "G_Assignment_Layered", "R_Assignment_LSP", "R_Assignment_LCW" })
+		/*run simulation round by round (each round corresponds to a set of randomly selected candidateClients)*/		
+		for (const auto & clients4OneRound : candidateClients4AllRounds)
+		{
+			candidateClients = clients4OneRound;
+
+			for (const string algFirstStage : { "G_Assignment_Random", "G_Assignment_Simple", "G_Assignment_Layered", "R_Assignment_Random", "R_Assignment_LSP", "R_Assignment_LCW" })
 			{
-				for (string algSecondStage : { "G_Assignment_Simple", "G_Assignment_Layered", "R_Assignment_LSP", "R_Assignment_LCW" })
+				for (const string algSecondStage : { "G_Assignment_Random", "G_Assignment_Simple", "G_Assignment_Layered", "R_Assignment_Random", "R_Assignment_LSP", "R_Assignment_LCW" })
 				{
 					/*ignore invalid combination of algFirstStage and algSecondStage*/
-					if ("G_Assignment_Simple" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
+					if ("G_Assignment_Random" == algFirstStage || "G_Assignment_Simple" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
 					{
-						if ("G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage) { continue; }
+						if ("G_Assignment_Random" == algSecondStage || "G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage) { continue; }
 					}
-					else if ("R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage) { continue; }
+					else if ("R_Assignment_Random" == algSecondStage || "R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage) { continue; }
 
 					/*finally, the algThirdStage*/
-					for (string algThirdStage : { "Grouping_Greedy" })
+					for (const string algThirdStage : { "Grouping_Random", "Grouping_Greedy" })
 					{
+						/*Grouping_Greedy() is only effective on G_Assignment_Random(), so skip it if not*/
+						if ("Grouping_Greedy" == algThirdStage && "G_Assignment_Random" != algFirstStage && "G_Assignment_Random" != algSecondStage) { continue; }
+						
 						/*run one combination of three algorithms for three stages*/
 						ResetStageFlag();
-						ClientAssignment(sessionSize, serverCapacity, algFirstStage, algSecondStage);
-						ClientGrouping(sessionSize, serverCapacity, algThirdStage);
+						ClientAssignment(sim_setting.sessionSize, sim_setting.serverCapacity, algFirstStage, algSecondStage);
+						ClientGrouping(sim_setting.sessionSize, sim_setting.serverCapacity, algThirdStage);
 
 						/*measure and record performance*/
 						auto solutionName = algFirstStage + "." + algSecondStage + "." + algThirdStage;
-						PerformanceMeasurement(performanceMeasurement, solutionName, serverCapacity);
+						PerformanceMeasurement(performanceMeasurement, solutionName, sim_setting.serverCapacity);
 					}
 				}
 			}
-		}		
+		}
 
 		/*dump recorded data to disk files*/
-		string settingPerTest = outputDirectory + std::to_string(regionControl) + "." + std::to_string(clientCount) + "." + std::to_string(latencyThreshold) + "." + std::to_string(sessionSize) + "." + std::to_string(serverCapacity);
+		string settingPerTest = outputDirectory + std::to_string(sim_setting.regionControl) + "." + std::to_string(sim_setting.clientCount) + "." + std::to_string(sim_setting.latencyThreshold) + "." + std::to_string(sim_setting.sessionSize) + "." + std::to_string(sim_setting.serverCapacity);
 		auto dataFile = ofstream(settingPerTest + ".csv");				
 		dataFile << "solutionName,sessionCount,serverCost,serverUtilization,R_G_colocation_ratio,G_count_allSessions,R_count_perSession\n"; // header line
 		for (auto & it : performanceMeasurement.sessionCountTable)

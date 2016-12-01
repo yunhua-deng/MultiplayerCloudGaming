@@ -90,6 +90,26 @@ namespace MatchmakingProblem
 			G_count_allSessions_table, 
 			R_count_perSession_table;
 	};
+	
+	struct Setting
+	{
+		bool regionControl; // pick clients in a controlled or pure random manner
+		int clientCount; // the number of clients eligible for grouping
+		int latencyThreshold; // one-way
+		int sessionSize;
+		int serverCapacity;
+		int simulationCount; // the number of simulation runs to perform
+
+		Setting(const bool regionControl_in, const int clientCount_in, const int latencyThreshold_in, const int sessionSize_in, const int serverCapacity_in, const int simulationCount_in)
+		{
+			regionControl = regionControl_in;
+			clientCount = clientCount_in;
+			latencyThreshold = latencyThreshold_in;
+			sessionSize = sessionSize_in;
+			serverCapacity = serverCapacity_in;
+			simulationCount = simulationCount_in;
+		}
+	};
 
 	class MatchmakingProblemBase
 	{			
@@ -123,14 +143,14 @@ namespace MatchmakingProblem
 	{
 	public:			
 		string outputDirectory = dataDirectory + "ParetoMatchingProblem\\";
-		void Simulate(const bool regionControl = false, const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int serverCapacity = 4, const int simulationCount = 100);
+		void Simulate(const Setting &);
 	private:
 		vector<ClientType> candidateClients; // copy of a subset of globalClientList
 		vector<DatacenterType> candidateDatacenters; // copy of globalDatacenterList
 		map<int, vector<SessionType>> sessionListPerG; // indexed by G
 		
 		double SearchEligibleDatacenters4Clients(const int latencyThreshold);
-		void GenerateCandidateClients(const int clientCount, const bool controlled);
+		vector<ClientType> GenerateCandidateClients(const int clientCount, const bool controlled);
 
 		/*stage flags (need to be reset for each round)*/
 		bool Assignment_G_Completed = false;
