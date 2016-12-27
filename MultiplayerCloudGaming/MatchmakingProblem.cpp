@@ -165,23 +165,8 @@ namespace MatchmakingProblem
 				return;
 			}
 		}		
-	}
-		
-	void MaximumMatchingProblem::RandomAssignmentGrouping()
-	{
-		/*reset assignedClients_G*/
-		for (auto & dc : candidateDatacenters) { dc.assignedClients_G.clear(); }
-		/*reset assignedDatacenter_G*/
-		for (auto & client : candidateClients) { client.assignedDatacenter_G = nullptr; }
-
-		/*determine each dc's assignedClients_G*/
-		for (auto & client : candidateClients)
-		{
-			if (!client.eligibleDatacenters_G.empty()) { client.assignedDatacenter_G = client.eligibleDatacenters_G.at(GenerateRandomIndex(client.eligibleDatacenters_G.size())); }
-			
-			if (client.assignedDatacenter_G != nullptr) { client.assignedDatacenter_G->assignedClients_G.push_back(&client); }
-		}
-	}
+	}	
+	
 
 	void MaximumMatchingProblem::NearestAssignmentGrouping()
 	{	
@@ -377,7 +362,10 @@ namespace MatchmakingProblem
 		{
 			/*generate candidateClients (copy from globalClientList)*/
 			candidateClients.clear();
-			while (candidateClients.size() < clientCount) { candidateClients.push_back(globalClientList.at(GenerateRandomIndex(globalClientList.size()))); }
+			while (candidateClients.size() < clientCount) 
+			{ 
+				candidateClients.push_back(globalClientList.at(GenerateRandomIndex((int)globalClientList.size())));
+			}
 
 			/*generate candidateDatacenters (copy from globalDatacenterList)*/
 			candidateDatacenters = globalDatacenterList;
@@ -410,7 +398,6 @@ namespace MatchmakingProblem
 			/*run grouping algorithm*/
 			auto timeStart = clock();
 			if ("nearest" == algToRun) NearestAssignmentGrouping();
-			else if ("random" == algToRun) RandomAssignmentGrouping();
 			else if ("simple" == algToRun) SimpleGreedyGrouping(sessionSize);
 			else if ("layered" == algToRun) LayeredGreedyGrouping(sessionSize);
 			else std::printf("invalid algoritm name!\n");
@@ -509,6 +496,7 @@ namespace MatchmakingProblem
 		return eligibleClientRate;
 	}
 
+	/*each generated client is guaranteed to have at least one eligible G datacenter*/
 	vector<ClientType> ParetoMatchingProblem::GenerateCandidateClients(const int clientCount, const bool regionControl)
 	{
 		vector<ClientType> candidateClientList;
@@ -523,7 +511,7 @@ namespace MatchmakingProblem
 					{
 						while (true)
 						{
-							auto clientIndex = GenerateRandomIndex(cluster.second.size());
+							auto clientIndex = GenerateRandomIndex((int)cluster.second.size());
 							auto oneClient = globalClientList.at(cluster.second.at(clientIndex));
 							if (!oneClient.eligibleDatacenters_G.empty())
 							{
@@ -539,7 +527,7 @@ namespace MatchmakingProblem
 		{
 			while (candidateClientList.size() < clientCount)
 			{
-				auto clientIndex = GenerateRandomIndex(globalClientList.size());
+				auto clientIndex = GenerateRandomIndex((int)globalClientList.size());
 				auto oneClient = globalClientList.at(clientIndex);
 				if (!oneClient.eligibleDatacenters_G.empty()) 
 				{ 
@@ -613,11 +601,11 @@ namespace MatchmakingProblem
 	{
 		Assignment_G_Completed = false;
 		Assignment_R_Completed = false;
-		Grouping_Completed = false;
+		Session_Making_Completed = false;
 	}
-
-	void ParetoMatchingProblem::G_Assignment_Random()
-	{		
+	
+	void ParetoMatchingProblem::G_Assignment_Nearest(const int sessionSize)
+	{
 		/*ensure not yet assigned*/
 		if (Assignment_G_Completed)
 		{
@@ -625,7 +613,8 @@ namespace MatchmakingProblem
 			cin.get();
 			return;
 		}
-		
+
+		/*reset*/
 		Reset_G_Assignment();
 
 		/*G_Assignment*/
@@ -633,19 +622,49 @@ namespace MatchmakingProblem
 		{
 			for (auto & client : candidateClients)
 			{
-				auto index = GenerateRandomIndex(client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).size());				
-				client.assignedDatacenter_G = client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).at(index);
+				// using eligibleDatacenters_G_indexed_by_R because R_Assignment is complete
+				client.assignedDatacenter_G = client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).front();
+				for (const auto & dc_g : client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id))
+				{
+					if (globalClientList.at(client.id).delayToDatacenter.at(dc_g->id) < globalClientList.at(client.id).delayToDatacenter.at(client.assignedDatacenter_G->id))
+					{
+						client.assignedDatacenter_G = dc_g; // choose the nearer one
+					}
+				}
 				client.assignedDatacenter_G->assignedClients_G.push_back(&client);
-			}				
+			}
 		}
 		else
 		{
 			for (auto & client : candidateClients)
 			{
-				auto index = GenerateRandomIndex(client.eligibleDatacenters_G.size());
-				client.assignedDatacenter_G = client.eligibleDatacenters_G.at(index);
+				// using eligibleDatacenters_G
+				client.assignedDatacenter_G = client.eligibleDatacenters_G.front();
+				for (const auto & dc_g : client.eligibleDatacenters_G)
+				{
+					if (globalClientList.at(client.id).delayToDatacenter.at(dc_g->id) < globalClientList.at(client.id).delayToDatacenter.at(client.assignedDatacenter_G->id))
+					{
+						client.assignedDatacenter_G = dc_g; // choose the nearer one
+					}
+				}
 				client.assignedDatacenter_G->assignedClients_G.push_back(&client);
 			}
+		}
+
+		/*select clients that can be finally grouped according to the sessionSize, and update all the related stuff*/
+		for (auto & dc : candidateDatacenters)
+		{				
+			// only the first m clients can be grouped to this dc
+			int m = int(std::floor((double)dc.assignedClients_G.size() / sessionSize) * sessionSize);
+			
+			// reset the G of each client from m to the last
+			for (int i = m; i < dc.assignedClients_G.size(); i++)
+			{
+				dc.assignedClients_G.at(i)->assignedDatacenter_G = nullptr;
+			}
+
+			// now assignedClients_G only contains m clients (from 0 to m - 1)
+			dc.assignedClients_G.assign(dc.assignedClients_G.begin(), dc.assignedClients_G.begin() + m);
 		}
 
 		/*marked*/
@@ -699,10 +718,10 @@ namespace MatchmakingProblem
 		{
 			/*pick the maxDC*/
 			auto maxDC = &(candidateDatacenters.front());
-			int maxRank = 0;
+			int highestRank = 0;
 			for (auto & client : maxDC->coverableClients_G)
 			{
-				if (nullptr == client->assignedDatacenter_G) { maxRank++; }
+				if (nullptr == client->assignedDatacenter_G) { highestRank++; }
 			}
 			for (auto & dc : candidateDatacenters)
 			{
@@ -711,15 +730,15 @@ namespace MatchmakingProblem
 				{
 					if (nullptr == client->assignedDatacenter_G) { thisRank++; }
 				}
-				if (thisRank > maxRank)
+				if (thisRank > highestRank)
 				{
-					maxRank = thisRank;
+					highestRank = thisRank;
 					maxDC = &dc;
 				}
 			}
 
 			/*determine how many unassigned clients to assign in this round*/
-			double unassignedClients_G_InMaxDC = (double)maxRank;
+			double unassignedClients_G_InMaxDC = (double)highestRank;
 			int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
 			if (0 == clientsToBeGroupedInMaxDC) { break; }
 
@@ -933,7 +952,7 @@ namespace MatchmakingProblem
 		}
 	}
 
-	void ParetoMatchingProblem::R_Assignment_Random()
+	void ParetoMatchingProblem::R_Assignment_Nearest()
 	{
 		/*ensure not yet assigned*/
 		if (Assignment_R_Completed)
@@ -942,7 +961,8 @@ namespace MatchmakingProblem
 			cin.get();
 			return;
 		}
-		
+
+		/*reset*/
 		Reset_R_Assignment();
 
 		if (Assignment_G_Completed)
@@ -951,18 +971,32 @@ namespace MatchmakingProblem
 			{
 				if (nullptr != client.assignedDatacenter_G)
 				{
-					auto index = GenerateRandomIndex(client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).size());
-					client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).at(index);
+					// using eligibleDatacenters_R_indexed_by_G because Assignment_G_Completed
+					client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).front();
+					for (const auto & dc_r : client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id))
+					{
+						if (globalClientList.at(client.id).delayToDatacenter.at(dc_r->id) < globalClientList.at(client.id).delayToDatacenter.at(client.assignedDatacenter_G->id))
+						{
+							client.assignedDatacenter_R = dc_r; // choose the nearer one
+						}
+					}					
 					client.assignedDatacenter_R->assignedClients_R.push_back(&client);
 				}
 			}
 		}
 		else
-		{			
+		{
 			for (auto & client : candidateClients)
 			{
-				auto index = GenerateRandomIndex(client.eligibleDatacenters_R.size());
-				client.assignedDatacenter_R = client.eligibleDatacenters_R.at(index);
+				// using eligibleDatacenters_R
+				client.assignedDatacenter_R = client.eligibleDatacenters_R.front();
+				for (const auto & dc_r : client.eligibleDatacenters_R)
+				{
+					if (globalClientList.at(client.id).delayToDatacenter.at(dc_r->id) < globalClientList.at(client.id).delayToDatacenter.at(client.assignedDatacenter_R->id))
+					{
+						client.assignedDatacenter_R = dc_r; // choose the nearer one
+					}
+				}
 				client.assignedDatacenter_R->assignedClients_R.push_back(&client);
 			}
 		}
@@ -1127,9 +1161,9 @@ namespace MatchmakingProblem
 	void ParetoMatchingProblem::ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage)
 	{
 		/*detect invalid algorithm combination*/
-		if ("G_Assignment_Random" == algFirstStage || "G_Assignment_Simple" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
+		if ("G_Assignment_Nearest" == algFirstStage || "G_Assignment_Simple" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
 		{
-			if ("G_Assignment_Random" == algSecondStage || "G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage)
+			if ("G_Assignment_Nearest" == algSecondStage || "G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage)
 			{
 				std::printf("\n***ERROR: invalid assignment algorithm combination***\n");
 				cin.get();
@@ -1138,7 +1172,7 @@ namespace MatchmakingProblem
 		}
 		else
 		{
-			if ("R_Assignment_Random" == algSecondStage || "R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage)
+			if ("R_Assignment_Nearest" == algSecondStage || "R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage)
 			{
 				std::printf("\n***ERROR: invalid assignment algorithm combination***\n");
 				cin.get();
@@ -1147,34 +1181,35 @@ namespace MatchmakingProblem
 		}		
 
 		/*first stage*/
-		if ("G_Assignment_Random" == algFirstStage) G_Assignment_Random();
+		if ("G_Assignment_Nearest" == algFirstStage) G_Assignment_Nearest(sessionSize);
 		else if ("G_Assignment_Simple" == algFirstStage) G_Assignment_Simple(sessionSize);
 		else if ("G_Assignment_Layered" == algFirstStage) G_Assignment_Layered(sessionSize);
-		else if ("R_Assignment_Random" == algFirstStage) R_Assignment_Random();
+		else if ("R_Assignment_Nearest" == algFirstStage) R_Assignment_Nearest();
 		else if ("R_Assignment_LSP" == algFirstStage) R_Assignment_LSP();
 		else if ("R_Assignment_LCW" == algFirstStage) R_Assignment_LCW(serverCapacity);
 
 		/*second stage*/
-		if ("G_Assignment_Random" == algSecondStage) G_Assignment_Random();
+		if ("G_Assignment_Nearest" == algSecondStage) G_Assignment_Nearest(sessionSize);
 		else if ("G_Assignment_Simple" == algSecondStage) G_Assignment_Simple(sessionSize);
 		else if ("G_Assignment_Layered" == algSecondStage) G_Assignment_Layered(sessionSize);
-		else if ("R_Assignment_Random" == algSecondStage) R_Assignment_Random();
+		else if ("R_Assignment_Nearest" == algSecondStage) R_Assignment_Nearest();
 		else if ("R_Assignment_LSP" == algSecondStage) R_Assignment_LSP();
-		else if ("R_Assignment_LCW" == algSecondStage) R_Assignment_LCW(serverCapacity);		
+		else if ("R_Assignment_LCW" == algSecondStage) R_Assignment_LCW(serverCapacity);
 	}
 	
-	void ParetoMatchingProblem::Grouping_Random(const int sessionSize)
+	/*a.k.a. Grouping*/
+	void ParetoMatchingProblem::Session_Making_After_Assignment(const int sessionSize)
 	{
 		/*ensure ClientAssignment() is completed*/
 		if (!Assignment_G_Completed || !Assignment_R_Completed)
 		{
-			std::printf("\n***ERROR: cannot run Grouping() as ClientAssignment() not yet completed***\n");
+			std::printf("\n***ERROR: cannot run Session_Making_After_Assignment() as ClientAssignment() not yet completed***\n");
 			cin.get();
 			return;
 		}
 
 		/*ensure not yet grouped*/
-		if (Grouping_Completed)
+		if (Session_Making_Completed)
 		{
 			std::printf("\n***ERROR: already grouped***\n");
 			cin.get();
@@ -1207,122 +1242,29 @@ namespace MatchmakingProblem
 		}
 
 		/*marked*/
-		Grouping_Completed = true;
-	}
-
-	void ParetoMatchingProblem::Grouping_Greedy(const int sessionSize, const int serverCapacity)
-	{
-		/*ensure ClientAssignment() is completed*/
-		if (!Assignment_G_Completed || !Assignment_R_Completed)
-		{
-			std::printf("\n***ERROR: cannot run Grouping() as ClientAssignment() not yet completed***\n");
-			cin.get();
-			return;
-		}
-
-		/*ensure not yet grouped*/
-		if (Grouping_Completed)
-		{
-			std::printf("\n***ERROR: already grouped***\n");
-			cin.get();
-			return;
-		}		
-
-		/*initialize (reset sessionListPerG)*/
-		for (auto & dc_g : candidateDatacenters)
-		{
-			vector<SessionType> emptySessionList;
-			sessionListPerG[dc_g.id] = emptySessionList;
-		}
-
-		/*update each dc_r's assignedClients_R because some of the clients may not be assigned to any G*/
-		for (auto & dc_r : candidateDatacenters)
-		{
-			auto assignedClients_R_copy = dc_r.assignedClients_R;
-			dc_r.assignedClients_R.clear();
-			for (auto & client : assignedClients_R_copy)
-			{
-				if (nullptr != client->assignedDatacenter_G)
-				{
-					dc_r.assignedClients_R.push_back(client);
-				}
-			}
-		}
-
-		/*grouping*/
-		map<int, vector<ClientType*>> clientsToGroup;
-		for (auto & dc_g : candidateDatacenters)
-		{
-			vector<ClientType*> temp;
-			clientsToGroup[dc_g.id] = temp;
-		}
-		vector<int> someNumberList(candidateDatacenters.size(), 0);
-		for (auto & dc_r : candidateDatacenters)
-		{
-			if (dc_r.assignedClients_R.size() > serverCapacity)
-			{
-				int someNumber = int(std::floor(double(dc_r.assignedClients_R.size()) / serverCapacity) * serverCapacity);
-				for (int i = 0; i < someNumber; i++)
-				{
-					clientsToGroup.at(dc_r.assignedClients_R.at(i)->assignedDatacenter_G->id).push_back(dc_r.assignedClients_R.at(i));
-				}
-				someNumberList.at(dc_r.id) = someNumber;
-			}
-		}
-		for (auto & dc_r : candidateDatacenters)
-		{
-			for (int i = someNumberList.at(dc_r.id); i < dc_r.assignedClients_R.size(); i++)
-			{
-				clientsToGroup.at(dc_r.assignedClients_R.at(i)->assignedDatacenter_G->id).push_back(dc_r.assignedClients_R.at(i));
-			}
-		}
-		for (auto & dc_g : candidateDatacenters)
-		{			
-			SessionType oneSession;
-			for (auto & client : clientsToGroup.at(dc_g.id))
-			{
-				oneSession.sessionClients.push_back(client);				
-				if (oneSession.sessionClients.size() == sessionSize)
-				{
-					sessionListPerG.at(dc_g.id).push_back(oneSession);
-					oneSession.sessionClients.clear(); // reset for next session
-				}
-			}
-		}
-			
-		/*marked*/
-		Grouping_Completed = true;
-	}
-
-	void ParetoMatchingProblem::ClientGrouping(const int sessionSize, const int serverCapacity, const string algThirdStage)
-	{
-		/*ensure ClientAssignment() is completed*/
-		if (!Assignment_G_Completed || !Assignment_R_Completed)
-		{
-			std::printf("\n***ERROR: cannot run ClientGrouping() because ClientAssignment() not yet completed***\n");
-			cin.get();
-			return;
-		}
-
-		/* Grouping_Greedy() is only effective on G_Assignment_Random() */
-		if ("Grouping_Random" == algThirdStage) Grouping_Random(sessionSize);
-		else if ("Grouping_Greedy" == algThirdStage) Grouping_Greedy(sessionSize, serverCapacity);
-	}
+		Session_Making_Completed = true;
+	}	
 
 	void ParetoMatchingProblem::PerformanceMeasurement(PerformanceType & performanceMeasurement, const string solutionName, const int serverCapacity)
 	{
 		/*ensure G_Assignment, R_Assignment, and Grouping completed*/
-		if (!Assignment_G_Completed || !Assignment_R_Completed || !Grouping_Completed)
+		if (!Assignment_G_Completed || !Assignment_R_Completed || !Session_Making_Completed)
 		{
-			std::printf("\n***ERROR: Assignment_G_Completed, Assignment_R_Completed, or Grouping_Completed is false***\n");
+			std::printf("\n***ERROR: Assignment_G_Completed, Assignment_R_Completed, or Session_Making_Completed is false***\n");
 			cin.get();
 			return;
-		}				
+		}
 		
 		/*stuff to record*/
-		double sessionCount = 0, serverCost = 0, serverUtilization = 0, R_G_colocation_ratio = 0, G_count_allSessions = 0, R_count_perSession = 0;
+		double 
+			sessionCount = 0, 
+			serverCost = 0, 
+			serverUtilization = 0, 
+			R_G_colocation_ratio = 0, 
+			G_count_allSessions = 0, 
+			R_count_perSession = 0;
 
-		/*stuff for assistance*/
+		/*supporting stuff*/
 		double groupedClientCount = 0, serverCount = 0, colocatedSessionCount = 0;
 		map<int, double> assignedClientCount_R;		
 		for (auto & dc_r : candidateDatacenters) { assignedClientCount_R[dc_r.id] = 0; }		
@@ -1369,7 +1311,7 @@ namespace MatchmakingProblem
 		performanceMeasurement.R_G_colocation_ratio_table[solutionName].push_back(R_G_colocation_ratio);
 		performanceMeasurement.G_count_allSessions_table[solutionName].push_back(G_count_allSessions);
 		performanceMeasurement.R_count_perSession_table[solutionName].push_back(R_count_perSession);
-	}	
+	}
 
 	void ParetoMatchingProblem::Simulate(const Setting & sim_setting)
 	{	
@@ -1413,32 +1355,25 @@ namespace MatchmakingProblem
 		{
 			candidateClients = clients4OneRound;
 
-			for (const string algFirstStage : { "G_Assignment_Random", "G_Assignment_Simple", "G_Assignment_Layered", "R_Assignment_Random", "R_Assignment_LSP", "R_Assignment_LCW" })
+			for (const string algFirstStage : { "G_Assignment_Nearest", "G_Assignment_Simple", "G_Assignment_Layered", "R_Assignment_Nearest", "R_Assignment_LSP", "R_Assignment_LCW" })
 			{
-				for (const string algSecondStage : { "G_Assignment_Random", "G_Assignment_Simple", "G_Assignment_Layered", "R_Assignment_Random", "R_Assignment_LSP", "R_Assignment_LCW" })
+				for (const string algSecondStage : { "G_Assignment_Nearest", "G_Assignment_Simple", "G_Assignment_Layered", "R_Assignment_Nearest", "R_Assignment_LSP", "R_Assignment_LCW" })
 				{
 					/*ignore invalid combination of algFirstStage and algSecondStage*/
-					if ("G_Assignment_Random" == algFirstStage || "G_Assignment_Simple" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
+					if ("G_Assignment_Nearest" == algFirstStage || "G_Assignment_Simple" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
 					{
-						if ("G_Assignment_Random" == algSecondStage || "G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage) { continue; }
+						if ("G_Assignment_Nearest" == algSecondStage || "G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage) { continue; }
 					}
-					else if ("R_Assignment_Random" == algSecondStage || "R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage) { continue; }
+					else if ("R_Assignment_Nearest" == algSecondStage || "R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage) { continue; }
+										
+					/*perform assignment and make sessions*/
+					ResetStageFlag();
+					ClientAssignment(sim_setting.sessionSize, sim_setting.serverCapacity, algFirstStage, algSecondStage);
+					Session_Making_After_Assignment(sim_setting.sessionSize);
 
-					/*finally, the algThirdStage*/
-					for (const string algThirdStage : { "Grouping_Random", "Grouping_Greedy" })
-					{
-						/*Grouping_Greedy() is only effective on G_Assignment_Random(), so skip it if not*/
-						if ("Grouping_Greedy" == algThirdStage && "G_Assignment_Random" != algFirstStage && "G_Assignment_Random" != algSecondStage) { continue; }
-						
-						/*run one combination of three algorithms for three stages*/
-						ResetStageFlag();
-						ClientAssignment(sim_setting.sessionSize, sim_setting.serverCapacity, algFirstStage, algSecondStage);
-						ClientGrouping(sim_setting.sessionSize, sim_setting.serverCapacity, algThirdStage);
-
-						/*measure and record performance*/
-						auto solutionName = algFirstStage + "." + algSecondStage + "." + algThirdStage;
-						PerformanceMeasurement(performanceMeasurement, solutionName, sim_setting.serverCapacity);
-					}
+					/*measure and record performance*/
+					auto solutionName = algFirstStage + "." + algSecondStage;
+					PerformanceMeasurement(performanceMeasurement, solutionName, sim_setting.serverCapacity);					
 				}
 			}
 		}
@@ -1460,7 +1395,7 @@ namespace MatchmakingProblem
 		dataFile.close();
 
 		/*dump session_count for every run*/
-		dataFile = ofstream(settingPerTest + ".sessionCount" + ".csv");
+		/*dataFile = ofstream(settingPerTest + ".sessionCount" + ".csv");
 		for (auto & it : performanceMeasurement.sessionCountTable)
 		{
 			dataFile << it.first << ",";
@@ -1470,7 +1405,7 @@ namespace MatchmakingProblem
 			}
 			dataFile << "\n";
 		}
-		dataFile.close();
+		dataFile.close();*/
 
 		std::printf("\n***Simulate(): %.2f seconds***\n", std::difftime(clock(), startTime) / 1000);
 	}

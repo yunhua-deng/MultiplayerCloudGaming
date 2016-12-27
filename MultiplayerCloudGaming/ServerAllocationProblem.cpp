@@ -1016,7 +1016,7 @@ namespace ServerAllocationProblem
 
 		for (auto client : sessionClients) // choose a dc for each client
 		{			
-			client->assignedDatacenterID = client->eligibleDatacenters.at(GenerateRandomIndex(client->eligibleDatacenters.size()))->id;
+			client->assignedDatacenterID = client->eligibleDatacenters.at(GenerateRandomIndex((int)client->eligibleDatacenters.size()))->id;
 			allDatacenters.at(client->assignedDatacenterID)->assignedClients.push_back(client);
 		}
 

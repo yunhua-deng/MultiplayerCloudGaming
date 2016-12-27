@@ -132,8 +132,7 @@ namespace MatchmakingProblem
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;
-		DatacenterType* GetClientNearestEligibleDC(ClientType & client);
-		void RandomAssignmentGrouping();
+		DatacenterType* GetClientNearestEligibleDC(ClientType & client);		
 		void NearestAssignmentGrouping();
 		void SimpleGreedyGrouping(const int sessionSize);
 		void LayeredGreedyGrouping(const int sessionSize);
@@ -155,30 +154,26 @@ namespace MatchmakingProblem
 		/*stage flags (need to be reset for each round)*/
 		bool Assignment_G_Completed = false;
 		bool Assignment_R_Completed = false;
-		bool Grouping_Completed = false;
+		bool Session_Making_Completed = false;
 		void ResetStageFlag();
 
-		/*G_Assignment algorithms*/
-		void G_Assignment_Random();
+		/*G_Assignment algorithms*/		
+		void G_Assignment_Nearest(const int sessionSize);
 		void G_Assignment_Simple(const int sessionSize);
 		void G_Assignment_Layered(const int sessionSize);
 		void Reset_G_Assignment();
 		
 		/*R_Assignment algorithms*/
-		void R_Assignment_Random();
+		void R_Assignment_Nearest();
 		void R_Assignment_LSP();
 		void R_Assignment_LCW(const int serverCapacity);
 		void Reset_R_Assignment();
 
 		/*assign each client in candidateClients to one dc_g and one dc_r*/
-		void ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage);
+		void ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage);		
 		
-		/*Grouping algorithms*/
-		void Grouping_Random(const int sessionSize);
-		void Grouping_Greedy(const int sessionSize, const int serverCapacity);
-		
-		/*group clients into sessions*/
-		void ClientGrouping(const int sessionSize, const int serverCapacity, const string algThirdStage);
+		/*make sessions*/
+		void Session_Making_After_Assignment(const int sessionSize);
 
 		/*compute final result based on the assignment and grouping results (sessionListPerG)*/
 		void PerformanceMeasurement(PerformanceType & performanceMeasurement, const string solutionName, const int serverCapacity);		

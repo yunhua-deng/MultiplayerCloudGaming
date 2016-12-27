@@ -2,7 +2,7 @@
 set(gcf, 'Position', get(0, 'Screensize'));
 L_T = [25 50 100];
 S_S = [10 20 40];
-for i = 1:3
+for i = 1:length(L_T)
     %eligible
     subplot(3, 4, (i - 1) * 4 + 1);
     alg = importdata(sprintf('layered_%d_%d.csv', L_T(i), S_S(1)));
@@ -16,7 +16,7 @@ for i = 1:3
     pbaspect([1.5 1 1]);
     
     %algorithm
-    for j = 1:3
+    for j = 1:length(S_S)
         subplot(3, 4, (i - 1) * 4 + 1 + j);        
        
         alg = importdata(sprintf('layered_%d_%d.csv', L_T(i), S_S(j)));

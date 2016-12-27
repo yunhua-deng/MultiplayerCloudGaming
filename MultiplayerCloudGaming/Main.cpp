@@ -36,11 +36,11 @@ int main(int argc, char *argv[])
 	auto simulator = ParetoMatchingProblem();
 	simulator.Initialize();
 	_mkdir(simulator.outputDirectory.c_str());
-	for (bool regionControl : { false, true })
+	for (bool regionControl : { false/*, true*/ })
 	{
-		for (int clientCount : { 100, 500 })
+		for (int clientCount : { 50, 100, 150, 200 })
 		{
-			for (int latencyThreshold : { 25, 50 })
+			for (int latencyThreshold : { 10, 20, 30 })
 			{
 				for (int sessionSize : { 10 })
 				{
