@@ -2,9 +2,14 @@
 
 namespace MatchmakingProblem
 {
-	bool ClientComparatorByFewerEligibleDatacenters_G(const ClientType* a, const ClientType* b)
+	bool ClientComparatorBy_Fewer_EligibleDatacenters_G(const ClientType* a, const ClientType* b)
 	{
 		return (a->eligibleDatacenters_G.size() < b->eligibleDatacenters_G.size());
+	}
+
+	bool ClientComparatorBy_More_EligibleDatacenters_G(const ClientType * a, const ClientType * b)
+	{
+		return (a->eligibleDatacenters_G.size() > b->eligibleDatacenters_G.size());
 	}
 
 	bool ClientComparatorByAssigned_R_ServerPrice(const ClientType * a, const ClientType * b)
@@ -198,7 +203,7 @@ namespace MatchmakingProblem
 		/*sort coverableClients_G for each datacenter*/
 		for (auto & dc : candidateDatacenters)
 		{
-			std::sort(dc.coverableClients_G.begin(), dc.coverableClients_G.end(), ClientComparatorByFewerEligibleDatacenters_G);
+			std::sort(dc.coverableClients_G.begin(), dc.coverableClients_G.end(), ClientComparatorBy_Fewer_EligibleDatacenters_G);
 		}
 
 		/*simple greedy*/
@@ -676,9 +681,8 @@ namespace MatchmakingProblem
 		Assignment_G_Completed = true;
 	}
 	
-	/*G_Assignment_Simple does not guarrantee that each client will be assigned to an G
-	cost_aware: if it is true, sort coverableClients_G in the order of client's assigned R datacenter's server price*/
-	void ParetoMatchingProblem::G_Assignment_Simple(const int sessionSize, const bool cost_aware)
+	/*G_Assignment_Simple does not guarrantee that each client will be assigned to an G*/
+	void ParetoMatchingProblem::G_Assignment_Simple(const int sessionSize, const string sortingMode)
 	{			
 		/*ensure not yet assigned*/
 		if (Assignment_G_Completed)
@@ -703,12 +707,11 @@ namespace MatchmakingProblem
 						dc_g.coverableClients_G.push_back(&client);
 					}
 				}
-
-				// sort coverableClients_G using ClientComparatorByAssigned_R_ServerPrice
-				if (cost_aware)
-				{
-					std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorByAssigned_R_ServerPrice);
-				}
+						
+				// soring
+				if (sortingMode == "PriceAscending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorByAssigned_R_ServerPrice);
+				else if (sortingMode == "LayerAscending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorBy_Fewer_EligibleDatacenters_G);
+				else if (sortingMode == "LayerDescending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorBy_More_EligibleDatacenters_G);				
 			}
 			else
 			{
@@ -719,6 +722,10 @@ namespace MatchmakingProblem
 						dc_g.coverableClients_G.push_back(&client);
 					}
 				}
+
+				// soring
+				if (sortingMode == "LayerAscending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorBy_Fewer_EligibleDatacenters_G);
+				else if (sortingMode == "LayerDescending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorBy_More_EligibleDatacenters_G);
 			}			
 		}
 			
@@ -1170,9 +1177,9 @@ namespace MatchmakingProblem
 	void ParetoMatchingProblem::ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage)
 	{
 		/*detect invalid algorithm combination*/
-		if ("G_Assignment_Nearest" == algFirstStage || "G_Assignment_Simple" == algFirstStage || "G_Assignment_Simple_Sort" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
+		if ("G_Assignment_Nearest" == algFirstStage || "G_Assignment_Simple" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
 		{
-			if ("G_Assignment_Nearest" == algSecondStage || "G_Assignment_Simple" == algSecondStage || "G_Assignment_Simple_Sort" == algSecondStage || "G_Assignment_Layered" == algSecondStage)
+			if ("G_Assignment_Nearest" == algSecondStage || "G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage)
 			{
 				std::printf("\n***ERROR: invalid assignment algorithm combination***\n");
 				cin.get();
@@ -1192,7 +1199,9 @@ namespace MatchmakingProblem
 		/*first stage*/
 		if ("G_Assignment_Nearest" == algFirstStage) G_Assignment_Nearest(sessionSize);
 		else if ("G_Assignment_Simple" == algFirstStage) G_Assignment_Simple(sessionSize);
-		else if ("G_Assignment_Simple_Sort" == algFirstStage) G_Assignment_Simple(sessionSize, true);
+		else if ("G_Assignment_Simple_PriceAscending" == algFirstStage) G_Assignment_Simple(sessionSize, "PriceAscending");
+		else if ("G_Assignment_Simple_LayerAscending" == algFirstStage) G_Assignment_Simple(sessionSize, "LayerAscending");
+		else if ("G_Assignment_Simple_LayerDescending" == algFirstStage) G_Assignment_Simple(sessionSize, "LayerDescending");
 		else if ("G_Assignment_Layered" == algFirstStage) G_Assignment_Layered(sessionSize);
 		else if ("R_Assignment_Nearest" == algFirstStage) R_Assignment_Nearest();
 		else if ("R_Assignment_LSP" == algFirstStage) R_Assignment_LSP();
@@ -1201,7 +1210,9 @@ namespace MatchmakingProblem
 		/*second stage*/
 		if ("G_Assignment_Nearest" == algSecondStage) G_Assignment_Nearest(sessionSize);
 		else if ("G_Assignment_Simple" == algSecondStage) G_Assignment_Simple(sessionSize);
-		else if ("G_Assignment_Simple_Sort" == algFirstStage) G_Assignment_Simple(sessionSize, true);
+		else if ("G_Assignment_Simple_PriceAscending" == algSecondStage) G_Assignment_Simple(sessionSize, "PriceAscending");
+		else if ("G_Assignment_Simple_LayerAscending" == algSecondStage) G_Assignment_Simple(sessionSize, "LayerAscending");
+		else if ("G_Assignment_Simple_LayerDescending" == algSecondStage) G_Assignment_Simple(sessionSize, "LayerDescending");
 		else if ("G_Assignment_Layered" == algSecondStage) G_Assignment_Layered(sessionSize);
 		else if ("R_Assignment_Nearest" == algSecondStage) R_Assignment_Nearest();
 		else if ("R_Assignment_LSP" == algSecondStage) R_Assignment_LSP();
@@ -1364,8 +1375,12 @@ namespace MatchmakingProblem
 		/*run simulation round by round (each round corresponds to a set of randomly selected candidateClients)*/		
 		vector<pair<string, string>> algorithmCombinations;
 		algorithmCombinations.push_back({ "G_Assignment_Simple", "R_Assignment_LCW" });
+		algorithmCombinations.push_back({ "G_Assignment_Simple", "R_Assignment_LSP" });
+		algorithmCombinations.push_back({ "G_Assignment_Simple", "R_Assignment_Nearest" });
 		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple" });
-		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_Sort" });
+		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_PriceAscending" });
+		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_LayerAscending" });
+		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_LayerDescending" });
 
 		for (const auto & clients4OneRound : candidateClients4AllRounds)
 		{			

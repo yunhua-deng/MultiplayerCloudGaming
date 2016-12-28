@@ -1,0 +1,8 @@
+solutionName,sessionCount,serverCost,serverUtilization,R_G_colocation_ratio,G_count_allSessions,R_count_perSession
+G_Assignment_Simple.R_Assignment_LCW,39.024,1.8613,0.984912,0.0682703,2.616,2.99895
+G_Assignment_Simple.R_Assignment_LSP,39.024,1.7746,0.967575,0.213165,2.616,2.27138
+G_Assignment_Simple.R_Assignment_Nearest,39.024,1.91328,0.960219,0.000487179,2.616,4.04724
+R_Assignment_LSP.G_Assignment_Simple,38.369,1.70325,0.970818,0.212116,4.479,1.8408
+R_Assignment_LSP.G_Assignment_Simple_LayerAscending,38.515,1.7046,0.970515,0.221309,4.42,1.84106
+R_Assignment_LSP.G_Assignment_Simple_LayerDescending,37.663,1.69961,0.971301,0.222652,4.231,1.80722
+R_Assignment_LSP.G_Assignment_Simple_PriceAscending,38.117,1.68317,0.97791,0.256459,4.268,1.75243

@@ -25,7 +25,8 @@ namespace MatchmakingProblem
 			this->id = givenID;
 		}
 	};
-	bool ClientComparatorByFewerEligibleDatacenters_G(const ClientType* a, const ClientType* b);
+	bool ClientComparatorBy_Fewer_EligibleDatacenters_G(const ClientType* a, const ClientType* b);
+	bool ClientComparatorBy_More_EligibleDatacenters_G(const ClientType* a, const ClientType* b);
 	bool ClientComparatorByAssigned_R_ServerPrice(const ClientType* a, const ClientType* b);
 	
 	struct DatacenterType
@@ -160,7 +161,7 @@ namespace MatchmakingProblem
 
 		/*G_Assignment algorithms*/		
 		void G_Assignment_Nearest(const int sessionSize);
-		void G_Assignment_Simple(const int sessionSize, const bool cost_aware = false);
+		void G_Assignment_Simple(const int sessionSize, const string sortingMode = "");
 		void G_Assignment_Layered(const int sessionSize);
 		void Reset_G_Assignment();
 		

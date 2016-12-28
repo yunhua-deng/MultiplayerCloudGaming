@@ -38,13 +38,13 @@ int main(int argc, char *argv[])
 	_mkdir(simulator.outputDirectory.c_str());
 	for (bool regionControl : { false/*, true*/ })
 	{
-		for (int clientCount : { 50, 100, 150, 200 })
+		for (int clientCount : { 100, 200, 400 })
 		{
-			for (int latencyThreshold : { 10, 20, 30 })
+			for (int latencyThreshold : { 25, 50, 100 })
 			{
 				for (int sessionSize : { 10 })
 				{
-					for (int serverCapacity : { 5 })
+					for (int serverCapacity : { 4 })
 					{
 						cout << "\nSimulate() with setting: " << regionControl << "." << clientCount << "." << latencyThreshold << "." << sessionSize << "." << serverCapacity << "\n";
 						simulator.Simulate(Setting(regionControl, clientCount, latencyThreshold, sessionSize, serverCapacity, 1000));
