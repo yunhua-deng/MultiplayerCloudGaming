@@ -162,7 +162,7 @@ namespace MatchmakingProblem
 		/*G_Assignment algorithms*/		
 		void G_Assignment_Nearest(const int sessionSize);
 		void G_Assignment_Simple(const int sessionSize, const string sortingMode = "");
-		void G_Assignment_Layered(const int sessionSize);
+		void G_Assignment_Layered(const int sessionSize, const bool extra_sorting_by_R_server_price = false);
 		void Reset_G_Assignment();
 		
 		/*R_Assignment algorithms*/

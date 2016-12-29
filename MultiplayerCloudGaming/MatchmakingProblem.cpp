@@ -783,7 +783,7 @@ namespace MatchmakingProblem
 	}
 
 	/*G_Assignment_Layered does not guarrantee that each client will be assigned to an G*/
-	void ParetoMatchingProblem::G_Assignment_Layered(const int sessionSize)
+	void ParetoMatchingProblem::G_Assignment_Layered(const int sessionSize, const bool extra_sorting_by_R_server_price)
 	{	
 		/*ensure not yet assigned*/
 		if (Assignment_G_Completed)
@@ -818,6 +818,9 @@ namespace MatchmakingProblem
 				dc_g.coverableClients_G.clear();
 				for (auto & sector : clientSectors)
 				{
+					// extra_sorting_by_R_server_price (only if Assignment_R_Completed)
+					if (extra_sorting_by_R_server_price) std::sort(sector.second.begin(), sector.second.end(), ClientComparatorByAssigned_R_ServerPrice);
+
 					for (auto & client : sector.second)
 					{
 						dc_g.coverableClients_G.push_back(client);
@@ -1206,6 +1209,7 @@ namespace MatchmakingProblem
 		else if ("G_Assignment_Simple_LayerAscending" == algFirstStage) G_Assignment_Simple(sessionSize, "LayerAscending");
 		else if ("G_Assignment_Simple_LayerDescending" == algFirstStage) G_Assignment_Simple(sessionSize, "LayerDescending");
 		else if ("G_Assignment_Layered" == algFirstStage) G_Assignment_Layered(sessionSize);
+		else if ("G_Assignment_Layered_PriceAscending" == algFirstStage) G_Assignment_Layered(sessionSize, true);
 		else if ("R_Assignment_Nearest" == algFirstStage) R_Assignment_Nearest();
 		else if ("R_Assignment_LSP" == algFirstStage) R_Assignment_LSP();
 		else if ("R_Assignment_LCW" == algFirstStage) R_Assignment_LCW(serverCapacity);
@@ -1217,6 +1221,7 @@ namespace MatchmakingProblem
 		else if ("G_Assignment_Simple_LayerAscending" == algSecondStage) G_Assignment_Simple(sessionSize, "LayerAscending");
 		else if ("G_Assignment_Simple_LayerDescending" == algSecondStage) G_Assignment_Simple(sessionSize, "LayerDescending");
 		else if ("G_Assignment_Layered" == algSecondStage) G_Assignment_Layered(sessionSize);
+		else if ("G_Assignment_Layered_PriceAscending" == algSecondStage) G_Assignment_Layered(sessionSize, true);
 		else if ("R_Assignment_Nearest" == algSecondStage) R_Assignment_Nearest();
 		else if ("R_Assignment_LSP" == algSecondStage) R_Assignment_LSP();
 		else if ("R_Assignment_LCW" == algSecondStage) R_Assignment_LCW(serverCapacity);
@@ -1376,14 +1381,15 @@ namespace MatchmakingProblem
 		}
 
 		/*run simulation round by round (each round corresponds to a set of randomly selected candidateClients)*/		
-		vector<pair<string, string>> algorithmCombinations;
-		algorithmCombinations.push_back({ "G_Assignment_Simple", "R_Assignment_LCW" });
-		algorithmCombinations.push_back({ "G_Assignment_Simple", "R_Assignment_LSP" });
-		algorithmCombinations.push_back({ "G_Assignment_Simple", "R_Assignment_Nearest" });
+		vector<pair<string, string>> algorithmCombinations;			
 		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple" });
 		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_PriceAscending" });
-		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_LayerAscending" });
-		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_LayerDescending" });
+		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Layered" });
+		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Layered_PriceAscending" });
+		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Simple" });
+		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Simple_PriceAscending" });
+		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Layered" });
+		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Layered_PriceAscending" });
 
 		for (const auto & clients4OneRound : candidateClients4AllRounds)
 		{			
