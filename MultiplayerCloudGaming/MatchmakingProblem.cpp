@@ -193,7 +193,7 @@ namespace MatchmakingProblem
 		}
 	}
 
-	void MaximumMatchingProblem::SimpleGreedyGrouping(const int sessionSize)
+	void MaximumMatchingProblem::SimpleGreedyGrouping(const int sessionSize, const bool sorting)
 	{
 		/*reset assignedClients_G*/
 		for (auto & dc : candidateDatacenters) { dc.assignedClients_G.clear(); }
@@ -201,9 +201,12 @@ namespace MatchmakingProblem
 		for (auto & client : candidateClients) { client.assignedDatacenter_G = nullptr; }
 
 		/*sort coverableClients_G for each datacenter*/
-		for (auto & dc : candidateDatacenters)
+		if (sorting)
 		{
-			std::sort(dc.coverableClients_G.begin(), dc.coverableClients_G.end(), ClientComparatorBy_Fewer_EligibleDatacenters_G);
+			for (auto & dc : candidateDatacenters)
+			{
+				std::sort(dc.coverableClients_G.begin(), dc.coverableClients_G.end(), ClientComparatorBy_Fewer_EligibleDatacenters_G);
+			}
 		}
 
 		/*simple greedy*/

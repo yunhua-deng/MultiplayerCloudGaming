@@ -136,7 +136,7 @@ namespace MatchmakingProblem
 		vector<DatacenterType> candidateDatacenters;
 		DatacenterType* GetClientNearestEligibleDC(ClientType & client);		
 		void NearestAssignmentGrouping();
-		void SimpleGreedyGrouping(const int sessionSize);
+		void SimpleGreedyGrouping(const int sessionSize, const bool sorting = false);
 		void LayeredGreedyGrouping(const int sessionSize);
 	};
 
