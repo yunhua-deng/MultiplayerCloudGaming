@@ -38,9 +38,9 @@ int main(int argc, char *argv[])
 	_mkdir(simulator.outputDirectory.c_str());
 	for (bool regionControl : { false/*, true*/ })
 	{
-		for (int clientCount : { 100, 200, 400 })
+		for (int clientCount : { 50, 100, 200, 400 })
 		{
-			for (int latencyThreshold : { 25, 50, 75, 100 })
+			for (int latencyThreshold : { 20, 50, 100 })
 			{
 				for (int sessionSize : { 10 })
 				{
