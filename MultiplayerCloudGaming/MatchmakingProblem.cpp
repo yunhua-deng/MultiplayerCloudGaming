@@ -1568,12 +1568,16 @@ namespace MatchmakingProblem
 		vector<pair<string, string>> algorithmCombinations;			
 		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple" });
 		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_PriceAscending" });
+		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_CostIncrease" });
 		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Layered" });
 		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Layered_PriceAscending" });
+		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Layered_CostIncrease" });
 		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Simple" });
 		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Simple_PriceAscending" });
+		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Simple_CostIncrease" });
 		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Layered" });
 		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Layered_PriceAscending" });
+		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Layered_CostIncrease" });
 
 		for (const auto & clients4OneRound : candidateClients4AllRounds)
 		{			
