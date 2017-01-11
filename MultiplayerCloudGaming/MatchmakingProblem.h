@@ -19,6 +19,8 @@ namespace MatchmakingProblem
 		map<int, vector<DatacenterType*>> eligibleDatacenters_G_indexed_by_R;
 		DatacenterType* assignedDatacenter_G = nullptr;
 		DatacenterType* assignedDatacenter_R = nullptr;
+
+		double potential_cost_increase = 0;
 		
 		ClientType(int givenID)
 		{
@@ -161,8 +163,8 @@ namespace MatchmakingProblem
 
 		/*G_Assignment algorithms*/		
 		void G_Assignment_Nearest(const int sessionSize);
-		void G_Assignment_Simple(const int sessionSize, const string sortingMode = "");
-		void G_Assignment_Layered(const int sessionSize, const bool extra_sorting_by_R_server_price = false);
+		void G_Assignment_Simple(const int sessionSize, const int serverCapacity, const string sortingMode = "");
+		void G_Assignment_Layered(const int sessionSize, const int serverCapacity, const string sortingMode = "");
 		void Reset_G_Assignment();
 		
 		/*R_Assignment algorithms*/

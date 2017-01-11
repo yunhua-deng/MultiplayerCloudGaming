@@ -685,7 +685,7 @@ namespace MatchmakingProblem
 	}
 	
 	/*G_Assignment_Simple does not guarrantee that each client will be assigned to an G*/
-	void ParetoMatchingProblem::G_Assignment_Simple(const int sessionSize, const string sortingMode)
+	void ParetoMatchingProblem::G_Assignment_Simple(const int sessionSize, const int serverCapacity, const string sortingMode)
 	{			
 		/*ensure not yet assigned*/
 		if (Assignment_G_Completed)
@@ -711,7 +711,7 @@ namespace MatchmakingProblem
 					}
 				}
 						
-				// soring
+				// sorting
 				if (sortingMode == "PriceAscending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorByAssigned_R_ServerPrice);
 				else if (sortingMode == "LayerAscending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorBy_Fewer_EligibleDatacenters_G);
 				else if (sortingMode == "LayerDescending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorBy_More_EligibleDatacenters_G);				
@@ -726,64 +726,152 @@ namespace MatchmakingProblem
 					}
 				}
 
-				// soring
+				// sorting
 				if (sortingMode == "LayerAscending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorBy_Fewer_EligibleDatacenters_G);
 				else if (sortingMode == "LayerDescending") std::sort(dc_g.coverableClients_G.begin(), dc_g.coverableClients_G.end(), ClientComparatorBy_More_EligibleDatacenters_G);
 			}			
 		}
 			
-		/*G-Assignment*/
-		while (true)
+		if (Assignment_R_Completed && sortingMode == "CostIncrease")
 		{
-			/*pick the maxDC*/
-			auto maxDC = &(candidateDatacenters.front());
-			int highestRank = 0;
-			for (auto & client : maxDC->coverableClients_G)
-			{
-				if (nullptr == client->assignedDatacenter_G) { highestRank++; }
-			}
-			for (auto & dc : candidateDatacenters)
-			{
-				int thisRank = 0;
-				for (auto & client : dc.coverableClients_G)
-				{
-					if (nullptr == client->assignedDatacenter_G) { thisRank++; }
-				}
-				if (thisRank > highestRank)
-				{
-					highestRank = thisRank;
-					maxDC = &dc;
-				}
-			}
+			/*stuff for calculating potential_cost_increase for each client*/
+			map<int, int> assignedClientCount_R;
+			for (auto & dc_r : candidateDatacenters) { assignedClientCount_R[dc_r.id] = 0; }
 
-			/*determine how many unassigned clients to assign in this round*/
-			double unassignedClients_G_InMaxDC = (double)highestRank;
-			int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
-			if (0 == clientsToBeGroupedInMaxDC) { break; }
-
-			/*group (assign) clients in the maxDC*/
-			for (auto & client : maxDC->coverableClients_G)
+			/*G-Assignment*/
+			while (true)
 			{
-				/*group (assign) one not-yet-grouped client*/
-				if (clientsToBeGroupedInMaxDC > 0)
+				/*pick the maxDC*/
+				auto maxDC = &(candidateDatacenters.front());
+				int highestRank = 0;
+				for (auto & client : maxDC->coverableClients_G)
 				{
-					if (nullptr == client->assignedDatacenter_G)
+					if (nullptr == client->assignedDatacenter_G) { highestRank++; }
+				}
+				for (auto & dc : candidateDatacenters)
+				{
+					int thisRank = 0;
+					for (auto & client : dc.coverableClients_G)
 					{
-						client->assignedDatacenter_G = maxDC;
-						client->assignedDatacenter_G->assignedClients_G.push_back(client);
-						clientsToBeGroupedInMaxDC--;
+						if (nullptr == client->assignedDatacenter_G) { thisRank++; }
+					}
+					if (thisRank > highestRank)
+					{
+						highestRank = thisRank;
+						maxDC = &dc;
 					}
 				}
-				else break;
+
+				/*determine how many unassigned clients to assign in this round*/
+				double unassignedClients_G_InMaxDC = (double)highestRank;
+				int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
+				if (0 == clientsToBeGroupedInMaxDC) { break; }
+
+				/*group the unassigned client that incurs the minimal cost increase at every iteration*/
+				while (clientsToBeGroupedInMaxDC != 0)
+				{					
+					/*compute the potential_cost_increase for each client*/
+					for (auto & client : maxDC->coverableClients_G)
+					{
+						if (nullptr == client->assignedDatacenter_G)
+						{
+							if (0 == assignedClientCount_R.at(client->assignedDatacenter_R->id))
+							{
+								client->potential_cost_increase = client->assignedDatacenter_R->priceServer;
+							}
+							else
+							{
+								if (assignedClientCount_R.at(client->assignedDatacenter_R->id) % serverCapacity == 0)
+									client->potential_cost_increase = client->assignedDatacenter_R->priceServer;
+								else
+									client->potential_cost_increase = 0;
+							}
+						}
+					}
+					
+					/*pick the client with minimal potential_cost_increase*/
+					ClientType * client_to_be_grouped = maxDC->coverableClients_G.front();
+					for (auto & client : maxDC->coverableClients_G) // initialize the client_to_be_grouped by the first unassigned client
+					{
+						if (nullptr == client->assignedDatacenter_G)
+						{
+							client_to_be_grouped = client;
+							break;
+						}
+					}
+					for (auto & client : maxDC->coverableClients_G) // pick the client with the minimal potential cost increase
+					{
+						if (client->potential_cost_increase < client_to_be_grouped->potential_cost_increase)
+						{
+							client_to_be_grouped = client; 
+						}
+					}
+
+					/*assign client_to_be_grouped to maxDC*/
+					client_to_be_grouped->assignedDatacenter_G = maxDC;
+					client_to_be_grouped->assignedDatacenter_G->assignedClients_G.push_back(client_to_be_grouped);
+					clientsToBeGroupedInMaxDC--;
+
+					/*increase assignedClientCount_R*/
+					assignedClientCount_R.at(client_to_be_grouped->assignedDatacenter_R->id)++;
+				}
 			}
 		}
+		else
+		{
+			/*G-Assignment*/
+			while (true)
+			{
+				/*pick the maxDC*/
+				auto maxDC = &(candidateDatacenters.front());
+				int highestRank = 0;
+				for (auto & client : maxDC->coverableClients_G)
+				{
+					if (nullptr == client->assignedDatacenter_G) { highestRank++; }
+				}
+				for (auto & dc : candidateDatacenters)
+				{
+					int thisRank = 0;
+					for (auto & client : dc.coverableClients_G)
+					{
+						if (nullptr == client->assignedDatacenter_G) { thisRank++; }
+					}
+					if (thisRank > highestRank)
+					{
+						highestRank = thisRank;
+						maxDC = &dc;
+					}
+				}
+
+				/*determine how many unassigned clients to assign in this round*/
+				double unassignedClients_G_InMaxDC = (double)highestRank;
+				int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
+				if (0 == clientsToBeGroupedInMaxDC) { break; }
+
+				/*group (assign) clients in the maxDC*/
+				for (auto & client : maxDC->coverableClients_G)
+				{
+					/*group (assign) one not-yet-grouped client*/
+					if (clientsToBeGroupedInMaxDC > 0)
+					{
+						if (nullptr == client->assignedDatacenter_G)
+						{
+							client->assignedDatacenter_G = maxDC;
+							client->assignedDatacenter_G->assignedClients_G.push_back(client);
+							clientsToBeGroupedInMaxDC--;
+						}
+					}
+					else break;
+				}
+			}
+		}		
 
 		/*marked*/
 		Assignment_G_Completed = true;
 	}
 
 	/*G_Assignment_Layered does not guarrantee that each client will be assigned to an G*/
-	void ParetoMatchingProblem::G_Assignment_Layered(const int sessionSize, const bool extra_sorting_by_R_server_price)
+	void ParetoMatchingProblem::G_Assignment_Layered(const int sessionSize, const int serverCapacity, const string sortingMode)
 	{	
 		/*ensure not yet assigned*/
 		if (Assignment_G_Completed)
@@ -819,7 +907,7 @@ namespace MatchmakingProblem
 				for (auto & sector : clientSectors)
 				{
 					// extra_sorting_by_R_server_price (only if Assignment_R_Completed)
-					if (extra_sorting_by_R_server_price) std::sort(sector.second.begin(), sector.second.end(), ClientComparatorByAssigned_R_ServerPrice);
+					if (sortingMode == "PriceAscending") std::sort(sector.second.begin(), sector.second.end(), ClientComparatorByAssigned_R_ServerPrice);
 
 					for (auto & client : sector.second)
 					{
@@ -828,54 +916,146 @@ namespace MatchmakingProblem
 				}
 			}
 
-			/*G-Assignment*/
-			for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
+			if (sortingMode == "CostIncrease")
 			{
-				while (true)
+				/*stuff for calculating potential_cost_increase for each client*/
+				map<int, int> assignedClientCount_R;
+				for (auto & dc_r : candidateDatacenters) { assignedClientCount_R[dc_r.id] = 0; }
+
+				/*G-Assignment*/
+				for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
 				{
-					/*pick the maxDC*/
-					auto maxDC = &(candidateDatacenters.front());
-					int maxRank = 0;
-					for (auto & client : maxDC->coverableClients_G)
+					while (true)
 					{
-						if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G_indexed_by_R.at(client->assignedDatacenter_R->id).size() <= layerIndex) { maxRank++; }
-					}
-					for (auto & dc : candidateDatacenters)
-					{
-						int thisRank = 0;
-						for (auto & client : dc.coverableClients_G)
+						/*pick the maxDC*/
+						auto maxDC = &(candidateDatacenters.front());
+						int maxRank = 0;
+						for (auto & client : maxDC->coverableClients_G)
 						{
-							if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G_indexed_by_R.at(client->assignedDatacenter_R->id).size() <= layerIndex) { thisRank++; }
+							if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G_indexed_by_R.at(client->assignedDatacenter_R->id).size() <= layerIndex) { maxRank++; }
 						}
-
-						if (thisRank > maxRank)
+						for (auto & dc : candidateDatacenters)
 						{
-							maxRank = thisRank;
-							maxDC = &dc;
-						}
-					}
-
-					/*determine how many unassigned clients to assign in this round*/
-					double unassignedClients_G_InMaxDC = (double)maxRank;
-					int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
-					if (0 == clientsToBeGroupedInMaxDC) { break; }
-
-					/*group (assign) clients in the maxDC*/
-					for (auto & client : maxDC->coverableClients_G)
-					{
-						if (clientsToBeGroupedInMaxDC > 0)
-						{
-							if (nullptr == client->assignedDatacenter_G)
+							int thisRank = 0;
+							for (auto & client : dc.coverableClients_G)
 							{
-								client->assignedDatacenter_G = maxDC;
-								client->assignedDatacenter_G->assignedClients_G.push_back(client);
-								clientsToBeGroupedInMaxDC--;
+								if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G_indexed_by_R.at(client->assignedDatacenter_R->id).size() <= layerIndex) { thisRank++; }
+							}
+
+							if (thisRank > maxRank)
+							{
+								maxRank = thisRank;
+								maxDC = &dc;
 							}
 						}
-						else break;
+
+						/*determine how many unassigned clients to assign in this round*/
+						double unassignedClients_G_InMaxDC = (double)maxRank;
+						int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
+						if (0 == clientsToBeGroupedInMaxDC) { break; }
+
+						/*group the unassigned client that incurs the minimal cost increase at every iteration*/
+						while (clientsToBeGroupedInMaxDC != 0)
+						{
+							/*compute the potential_cost_increase for each client*/
+							for (auto & client : maxDC->coverableClients_G)
+							{
+								if (nullptr == client->assignedDatacenter_G)
+								{
+									if (0 == assignedClientCount_R.at(client->assignedDatacenter_R->id))
+									{
+										client->potential_cost_increase = client->assignedDatacenter_R->priceServer;
+									}
+									else
+									{
+										if (assignedClientCount_R.at(client->assignedDatacenter_R->id) % serverCapacity == 0)
+											client->potential_cost_increase = client->assignedDatacenter_R->priceServer;
+										else
+											client->potential_cost_increase = 0;
+									}
+								}
+							}
+
+							/*pick the client with minimal potential_cost_increase*/
+							ClientType * client_to_be_grouped = maxDC->coverableClients_G.front();
+							for (auto & client : maxDC->coverableClients_G) // initialize the client_to_be_grouped by the first unassigned client
+							{
+								if (nullptr == client->assignedDatacenter_G)
+								{
+									client_to_be_grouped = client;
+									break;
+								}
+							}
+							for (auto & client : maxDC->coverableClients_G) // pick the client with the minimal potential cost increase
+							{
+								if (client->potential_cost_increase < client_to_be_grouped->potential_cost_increase)
+								{
+									client_to_be_grouped = client;
+								}
+							}
+
+							/*assign client_to_be_grouped to maxDC*/
+							client_to_be_grouped->assignedDatacenter_G = maxDC;
+							client_to_be_grouped->assignedDatacenter_G->assignedClients_G.push_back(client_to_be_grouped);
+							clientsToBeGroupedInMaxDC--;
+
+							/*increase assignedClientCount_R*/
+							assignedClientCount_R.at(client_to_be_grouped->assignedDatacenter_R->id)++;
+						}
 					}
 				}
 			}
+			else 
+			{
+				/*G-Assignment*/
+				for (size_t layerIndex = 1; layerIndex <= candidateClients.size(); layerIndex++)
+				{
+					while (true)
+					{
+						/*pick the maxDC*/
+						auto maxDC = &(candidateDatacenters.front());
+						int maxRank = 0;
+						for (auto & client : maxDC->coverableClients_G)
+						{
+							if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G_indexed_by_R.at(client->assignedDatacenter_R->id).size() <= layerIndex) { maxRank++; }
+						}
+						for (auto & dc : candidateDatacenters)
+						{
+							int thisRank = 0;
+							for (auto & client : dc.coverableClients_G)
+							{
+								if (nullptr == client->assignedDatacenter_G && client->eligibleDatacenters_G_indexed_by_R.at(client->assignedDatacenter_R->id).size() <= layerIndex) { thisRank++; }
+							}
+
+							if (thisRank > maxRank)
+							{
+								maxRank = thisRank;
+								maxDC = &dc;
+							}
+						}
+
+						/*determine how many unassigned clients to assign in this round*/
+						double unassignedClients_G_InMaxDC = (double)maxRank;
+						int clientsToBeGroupedInMaxDC = int(std::floor(unassignedClients_G_InMaxDC / sessionSize) * sessionSize);
+						if (0 == clientsToBeGroupedInMaxDC) { break; }
+
+						/*group (assign) clients in the maxDC*/
+						for (auto & client : maxDC->coverableClients_G)
+						{
+							if (clientsToBeGroupedInMaxDC > 0)
+							{
+								if (nullptr == client->assignedDatacenter_G)
+								{
+									client->assignedDatacenter_G = maxDC;
+									client->assignedDatacenter_G->assignedClients_G.push_back(client);
+									clientsToBeGroupedInMaxDC--;
+								}
+							}
+							else break;
+						}
+					}
+				}
+			}			
 		}
 		else
 		{
@@ -1204,24 +1384,28 @@ namespace MatchmakingProblem
 
 		/*first stage*/
 		if ("G_Assignment_Nearest" == algFirstStage) G_Assignment_Nearest(sessionSize);
-		else if ("G_Assignment_Simple" == algFirstStage) G_Assignment_Simple(sessionSize);
-		else if ("G_Assignment_Simple_PriceAscending" == algFirstStage) G_Assignment_Simple(sessionSize, "PriceAscending");
-		else if ("G_Assignment_Simple_LayerAscending" == algFirstStage) G_Assignment_Simple(sessionSize, "LayerAscending");
-		else if ("G_Assignment_Simple_LayerDescending" == algFirstStage) G_Assignment_Simple(sessionSize, "LayerDescending");
-		else if ("G_Assignment_Layered" == algFirstStage) G_Assignment_Layered(sessionSize);
-		else if ("G_Assignment_Layered_PriceAscending" == algFirstStage) G_Assignment_Layered(sessionSize, true);
+		else if ("G_Assignment_Simple" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity);
+		else if ("G_Assignment_Simple_PriceAscending" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "PriceAscending");
+		else if ("G_Assignment_Simple_LayerAscending" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerAscending");
+		else if ("G_Assignment_Simple_LayerDescending" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerDescending");
+		else if ("G_Assignment_Simple_CostIncrease" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "CostIncrease");
+		else if ("G_Assignment_Layered" == algFirstStage) G_Assignment_Layered(sessionSize, serverCapacity);
+		else if ("G_Assignment_Layered_PriceAscending" == algFirstStage) G_Assignment_Layered(sessionSize, serverCapacity, "PriceAscending");
+		else if ("G_Assignment_Layered_CostIncrease" == algFirstStage) G_Assignment_Layered(sessionSize, serverCapacity, "CostIncrease");
 		else if ("R_Assignment_Nearest" == algFirstStage) R_Assignment_Nearest();
 		else if ("R_Assignment_LSP" == algFirstStage) R_Assignment_LSP();
 		else if ("R_Assignment_LCW" == algFirstStage) R_Assignment_LCW(serverCapacity);
 
 		/*second stage*/
 		if ("G_Assignment_Nearest" == algSecondStage) G_Assignment_Nearest(sessionSize);
-		else if ("G_Assignment_Simple" == algSecondStage) G_Assignment_Simple(sessionSize);
-		else if ("G_Assignment_Simple_PriceAscending" == algSecondStage) G_Assignment_Simple(sessionSize, "PriceAscending");
-		else if ("G_Assignment_Simple_LayerAscending" == algSecondStage) G_Assignment_Simple(sessionSize, "LayerAscending");
-		else if ("G_Assignment_Simple_LayerDescending" == algSecondStage) G_Assignment_Simple(sessionSize, "LayerDescending");
-		else if ("G_Assignment_Layered" == algSecondStage) G_Assignment_Layered(sessionSize);
-		else if ("G_Assignment_Layered_PriceAscending" == algSecondStage) G_Assignment_Layered(sessionSize, true);
+		else if ("G_Assignment_Simple" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity);
+		else if ("G_Assignment_Simple_PriceAscending" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "PriceAscending");
+		else if ("G_Assignment_Simple_LayerAscending" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerAscending");
+		else if ("G_Assignment_Simple_LayerDescending" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerDescending");
+		else if ("G_Assignment_Simple_CostIncrease" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "CostIncrease");
+		else if ("G_Assignment_Layered" == algSecondStage) G_Assignment_Layered(sessionSize, serverCapacity);
+		else if ("G_Assignment_Layered_PriceAscending" == algSecondStage) G_Assignment_Layered(sessionSize, serverCapacity, "PriceAscending");
+		else if ("G_Assignment_Layered_CostIncrease" == algSecondStage) G_Assignment_Layered(sessionSize, serverCapacity, "CostIncrease");
 		else if ("R_Assignment_Nearest" == algSecondStage) R_Assignment_Nearest();
 		else if ("R_Assignment_LSP" == algSecondStage) R_Assignment_LSP();
 		else if ("R_Assignment_LCW" == algSecondStage) R_Assignment_LCW(serverCapacity);
