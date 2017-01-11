@@ -738,7 +738,7 @@ namespace MatchmakingProblem
 			map<int, int> assignedClientCount_R;
 			for (auto & dc_r : candidateDatacenters) { assignedClientCount_R[dc_r.id] = 0; }
 
-			/*G-Assignment*/
+			/*G-Assignment*/			
 			while (true)
 			{
 				/*pick the maxDC*/
@@ -790,7 +790,7 @@ namespace MatchmakingProblem
 					}
 					
 					/*pick the client with minimal potential_cost_increase*/
-					ClientType * client_to_be_grouped = maxDC->coverableClients_G.front();
+					auto client_to_be_grouped = maxDC->coverableClients_G.front();
 					for (auto & client : maxDC->coverableClients_G) // initialize the client_to_be_grouped by the first unassigned client
 					{
 						if (nullptr == client->assignedDatacenter_G)
@@ -799,11 +799,14 @@ namespace MatchmakingProblem
 							break;
 						}
 					}
-					for (auto & client : maxDC->coverableClients_G) // pick the client with the minimal potential cost increase
+					for (auto & client : maxDC->coverableClients_G) // pick the unassigned client with the minimal potential cost increase
 					{
-						if (client->potential_cost_increase < client_to_be_grouped->potential_cost_increase)
+						if (nullptr == client->assignedDatacenter_G) // critical
 						{
-							client_to_be_grouped = client; 
+							if (client->potential_cost_increase < client_to_be_grouped->potential_cost_increase)
+							{
+								client_to_be_grouped = client;
+							}
 						}
 					}
 
@@ -988,9 +991,12 @@ namespace MatchmakingProblem
 							}
 							for (auto & client : maxDC->coverableClients_G) // pick the client with the minimal potential cost increase
 							{
-								if (client->potential_cost_increase < client_to_be_grouped->potential_cost_increase)
+								if (nullptr == client->assignedDatacenter_G) // critical
 								{
-									client_to_be_grouped = client;
+									if (client->potential_cost_increase < client_to_be_grouped->potential_cost_increase)
+									{
+										client_to_be_grouped = client;
+									}
 								}
 							}
 
