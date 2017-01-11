@@ -1526,7 +1526,7 @@ namespace MatchmakingProblem
 		
 		/*record*/
 		performanceMeasurement.sessionCountTable[solutionName].push_back(sessionCount);
-		performanceMeasurement.serverCostTable[solutionName].push_back(serverCost / sessionCount); // average
+		performanceMeasurement.serverCostTable[solutionName].push_back(serverCost);
 		performanceMeasurement.serverUtilizationTable[solutionName].push_back(serverUtilization);
 		performanceMeasurement.R_G_colocation_ratio_table[solutionName].push_back(R_G_colocation_ratio);
 		performanceMeasurement.G_count_allSessions_table[solutionName].push_back(G_count_allSessions);
@@ -1613,7 +1613,7 @@ namespace MatchmakingProblem
 		{
 			dataFile << it.first << "," 
 				<< GetMeanValue(performanceMeasurement.sessionCountTable.at(it.first)) << ","
-				<< GetMeanValue(performanceMeasurement.serverCostTable.at(it.first)) << ","
+				<< GetMeanValue(performanceMeasurement.serverCostTable.at(it.first)) / GetMeanValue(performanceMeasurement.sessionCountTable.at(it.first)) << ","
 				<< GetMeanValue(performanceMeasurement.serverUtilizationTable.at(it.first)) << ","
 				<< GetMeanValue(performanceMeasurement.R_G_colocation_ratio_table.at(it.first)) << ","				
 				<< GetMeanValue(performanceMeasurement.G_count_allSessions_table.at(it.first)) << ","
