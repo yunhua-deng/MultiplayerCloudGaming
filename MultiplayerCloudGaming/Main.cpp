@@ -18,14 +18,14 @@ int main(int argc, char *argv[])
 	//auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
 	//simulator.Initialize(); // initialize once
 	//_mkdir(simulator.outputDirectory.c_str());
-	//for (string algToRun : { "layered", "simple", "nearest", "random" })
+	//for (string algToRun : { "layered", "simple", "nearest" })
 	//{		
 	//	for (int latencyThreshold : { 25, 50, 100 })
 	//	{			
-	//		for (int sessionSize : { 10, 20, 40 })
+	//		for (int sessionSize : { 10 })
 	//		{
 	//			simulator.outFile = ofstream(simulator.outputDirectory + algToRun + "_" + std::to_string(latencyThreshold) + "_" + std::to_string(sessionSize) + ".csv");
-	//			for (int clientCount = 50; clientCount <= 1000; clientCount += 50) { simulator.Simulate(algToRun, clientCount, latencyThreshold, sessionSize); }				
+	//			for (int clientCount = 50; clientCount <= 200; clientCount += 10) { simulator.Simulate(algToRun, clientCount, latencyThreshold, sessionSize); }				
 	//			simulator.outFile.close();
 	//		}
 	//	}
@@ -38,9 +38,9 @@ int main(int argc, char *argv[])
 	_mkdir(simulator.outputDirectory.c_str());
 	for (bool regionControl : { false/*, true*/ })
 	{
-		for (int clientCount : { 50, 100, 200, 400 })
+		for (int clientCount : { 50, 100, 150, 200 })
 		{
-			for (int latencyThreshold : { 20, 50, 100 })
+			for (int latencyThreshold : { 25, 50, 100 })
 			{
 				for (int sessionSize : { 10 })
 				{

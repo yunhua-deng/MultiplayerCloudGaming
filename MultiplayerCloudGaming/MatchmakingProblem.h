@@ -161,20 +161,21 @@ namespace MatchmakingProblem
 		bool Session_Making_Completed = false;
 		void ResetStageFlag();
 
-		/*G_Assignment algorithms*/		
-		void G_Assignment_Nearest(const int sessionSize);
+		/*Assignment_Nearest*/
+		void Assignment_Nearest(const int sessionSize);
+
+		/*G_Assignment algorithms*/
 		void G_Assignment_Simple(const int sessionSize, const int serverCapacity, const string sortingMode = "");
 		void G_Assignment_Layered(const int sessionSize, const int serverCapacity, const string sortingMode = "");
 		void Reset_G_Assignment();
 		
 		/*R_Assignment algorithms*/
-		void R_Assignment_Nearest();
 		void R_Assignment_LSP();
 		void R_Assignment_LCW(const int serverCapacity);
 		void Reset_R_Assignment();
 
 		/*assign each client in candidateClients to one dc_g and one dc_r*/
-		void ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage);		
+		void ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage);
 		
 		/*make sessions*/
 		void Session_Making_After_Assignment(const int sessionSize);

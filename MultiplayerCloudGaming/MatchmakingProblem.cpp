@@ -616,11 +616,11 @@ namespace MatchmakingProblem
 		Assignment_R_Completed = false;
 		Session_Making_Completed = false;
 	}
-	
-	void ParetoMatchingProblem::G_Assignment_Nearest(const int sessionSize)
+
+	void ParetoMatchingProblem::Assignment_Nearest(const int sessionSize)
 	{
 		/*ensure not yet assigned*/
-		if (Assignment_G_Completed)
+		if (Assignment_G_Completed || Assignment_R_Completed)
 		{
 			std::printf("\n***ERROR: already assigned to G***\n");
 			cin.get();
@@ -629,60 +629,49 @@ namespace MatchmakingProblem
 
 		/*reset*/
 		Reset_G_Assignment();
+		Reset_R_Assignment();
 
-		/*G_Assignment*/
-		if (Assignment_R_Completed)
+		/*G and R assignment for each client*/
+		for (auto & client : candidateClients)
 		{
-			for (auto & client : candidateClients)
+			// using eligibleDatacenters_G for G assignment
+			client.assignedDatacenter_G = client.eligibleDatacenters_G.front();
+			for (const auto & dc_g : client.eligibleDatacenters_G)
 			{
-				// using eligibleDatacenters_G_indexed_by_R because R_Assignment is complete
-				client.assignedDatacenter_G = client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id).front();
-				for (const auto & dc_g : client.eligibleDatacenters_G_indexed_by_R.at(client.assignedDatacenter_R->id))
+				if (globalClientList.at(client.id).delayToDatacenter.at(dc_g->id) < globalClientList.at(client.id).delayToDatacenter.at(client.assignedDatacenter_G->id))
 				{
-					if (globalClientList.at(client.id).delayToDatacenter.at(dc_g->id) < globalClientList.at(client.id).delayToDatacenter.at(client.assignedDatacenter_G->id))
-					{
-						client.assignedDatacenter_G = dc_g; // choose the nearer one
-					}
+					client.assignedDatacenter_G = dc_g; // choose the nearer one
 				}
-				client.assignedDatacenter_G->assignedClients_G.push_back(&client);
 			}
-		}
-		else
-		{
-			for (auto & client : candidateClients)
-			{
-				// using eligibleDatacenters_G
-				client.assignedDatacenter_G = client.eligibleDatacenters_G.front();
-				for (const auto & dc_g : client.eligibleDatacenters_G)
-				{
-					if (globalClientList.at(client.id).delayToDatacenter.at(dc_g->id) < globalClientList.at(client.id).delayToDatacenter.at(client.assignedDatacenter_G->id))
-					{
-						client.assignedDatacenter_G = dc_g; // choose the nearer one
-					}
-				}
-				client.assignedDatacenter_G->assignedClients_G.push_back(&client);
-			}
+			client.assignedDatacenter_G->assignedClients_G.push_back(&client);
+
+			// R is the same as G
+			client.assignedDatacenter_R = client.assignedDatacenter_G;
+			client.assignedDatacenter_R->assignedClients_R.push_back(&client);
 		}
 
 		/*select clients that can be finally grouped according to the sessionSize, and update all the related stuff*/
 		for (auto & dc : candidateDatacenters)
-		{				
+		{
 			// only the first m clients can be grouped to this dc
 			int m = int(std::floor((double)dc.assignedClients_G.size() / sessionSize) * sessionSize);
-			
-			// reset the G of each client from m to the last
+
+			// reset the R and G of each client from m to the last
 			for (int i = m; i < dc.assignedClients_G.size(); i++)
 			{
 				dc.assignedClients_G.at(i)->assignedDatacenter_G = nullptr;
+				dc.assignedClients_R.at(i)->assignedDatacenter_R = nullptr;
 			}
 
-			// now assignedClients_G only contains m clients (from 0 to m - 1)
+			// now assignedClients_G and assignedClients_R only contain the first m clients
 			dc.assignedClients_G.assign(dc.assignedClients_G.begin(), dc.assignedClients_G.begin() + m);
+			dc.assignedClients_R.assign(dc.assignedClients_R.begin(), dc.assignedClients_R.begin() + m);
 		}
 
 		/*marked*/
 		Assignment_G_Completed = true;
-	}
+		Assignment_R_Completed = true;
+	}	
 	
 	/*G_Assignment_Simple does not guarrantee that each client will be assigned to an G*/
 	void ParetoMatchingProblem::G_Assignment_Simple(const int sessionSize, const int serverCapacity, const string sortingMode)
@@ -1158,60 +1147,7 @@ namespace MatchmakingProblem
 			dc.coverableClients_G.clear();			
 			dc.assignedClients_G.clear();			
 		}
-	}
-
-	void ParetoMatchingProblem::R_Assignment_Nearest()
-	{
-		/*ensure not yet assigned*/
-		if (Assignment_R_Completed)
-		{
-			std::printf("\n***ERROR: already assigned to R***\n");
-			cin.get();
-			return;
-		}
-
-		/*reset*/
-		Reset_R_Assignment();
-
-		if (Assignment_G_Completed)
-		{
-			for (auto & client : candidateClients)
-			{
-				if (nullptr != client.assignedDatacenter_G)
-				{
-					// using eligibleDatacenters_R_indexed_by_G because Assignment_G_Completed
-					client.assignedDatacenter_R = client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id).front();
-					for (const auto & dc_r : client.eligibleDatacenters_R_indexed_by_G.at(client.assignedDatacenter_G->id))
-					{
-						if (globalClientList.at(client.id).delayToDatacenter.at(dc_r->id) < globalClientList.at(client.id).delayToDatacenter.at(client.assignedDatacenter_G->id))
-						{
-							client.assignedDatacenter_R = dc_r; // choose the nearer one
-						}
-					}					
-					client.assignedDatacenter_R->assignedClients_R.push_back(&client);
-				}
-			}
-		}
-		else
-		{
-			for (auto & client : candidateClients)
-			{
-				// using eligibleDatacenters_R
-				client.assignedDatacenter_R = client.eligibleDatacenters_R.front();
-				for (const auto & dc_r : client.eligibleDatacenters_R)
-				{
-					if (globalClientList.at(client.id).delayToDatacenter.at(dc_r->id) < globalClientList.at(client.id).delayToDatacenter.at(client.assignedDatacenter_R->id))
-					{
-						client.assignedDatacenter_R = dc_r; // choose the nearer one
-					}
-				}
-				client.assignedDatacenter_R->assignedClients_R.push_back(&client);
-			}
-		}
-
-		/*marked*/
-		Assignment_R_Completed = true;
-	}
+	}	
 
 	void ParetoMatchingProblem::R_Assignment_LSP()
 	{
@@ -1368,53 +1304,56 @@ namespace MatchmakingProblem
 	
 	void ParetoMatchingProblem::ClientAssignment(const int sessionSize, const int serverCapacity, const string algFirstStage, const string algSecondStage)
 	{
-		/*detect invalid algorithm combination*/
-		if ("G_Assignment_Nearest" == algFirstStage || "G_Assignment_Simple" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
+		if ("Assignment_Nearest" == (algFirstStage + algSecondStage)) // when using nearest assignment, G and R are simply collocated, thus there is only one stage
 		{
-			if ("G_Assignment_Nearest" == algSecondStage || "G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage)
-			{
-				std::printf("\n***ERROR: invalid assignment algorithm combination***\n");
-				cin.get();
-				return;
-			}
+			Assignment_Nearest(sessionSize);
 		}
 		else
 		{
-			if ("R_Assignment_Nearest" == algSecondStage || "R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage)
+			/*detect invalid algorithm combination*/
+			if ("G_Assignment_Simple" == algFirstStage || "G_Assignment_Layered" == algFirstStage)
 			{
-				std::printf("\n***ERROR: invalid assignment algorithm combination***\n");
-				cin.get();
-				return;
+				if ("G_Assignment_Simple" == algSecondStage || "G_Assignment_Layered" == algSecondStage)
+				{
+					std::printf("\n***ERROR: invalid assignment algorithm combination***\n");
+					cin.get();
+					return;
+				}
 			}
+			else
+			{
+				if ("R_Assignment_LSP" == algSecondStage || "R_Assignment_LCW" == algSecondStage)
+				{
+					std::printf("\n***ERROR: invalid assignment algorithm combination***\n");
+					cin.get();
+					return;
+				}
+			}
+
+			/*first stage*/
+			if ("G_Assignment_Simple" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity);
+			else if ("G_Assignment_Simple_PriceAscending" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "PriceAscending");
+			else if ("G_Assignment_Simple_LayerAscending" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerAscending");
+			else if ("G_Assignment_Simple_LayerDescending" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerDescending");
+			else if ("G_Assignment_Simple_CostIncrease" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "CostIncrease");
+			else if ("G_Assignment_Layered" == algFirstStage) G_Assignment_Layered(sessionSize, serverCapacity);
+			else if ("G_Assignment_Layered_PriceAscending" == algFirstStage) G_Assignment_Layered(sessionSize, serverCapacity, "PriceAscending");
+			else if ("G_Assignment_Layered_CostIncrease" == algFirstStage) G_Assignment_Layered(sessionSize, serverCapacity, "CostIncrease");
+			else if ("R_Assignment_LSP" == algFirstStage) R_Assignment_LSP();
+			else if ("R_Assignment_LCW" == algFirstStage) R_Assignment_LCW(serverCapacity);
+
+			/*second stage*/
+			if ("G_Assignment_Simple" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity);
+			else if ("G_Assignment_Simple_PriceAscending" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "PriceAscending");
+			else if ("G_Assignment_Simple_LayerAscending" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerAscending");
+			else if ("G_Assignment_Simple_LayerDescending" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerDescending");
+			else if ("G_Assignment_Simple_CostIncrease" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "CostIncrease");
+			else if ("G_Assignment_Layered" == algSecondStage) G_Assignment_Layered(sessionSize, serverCapacity);
+			else if ("G_Assignment_Layered_PriceAscending" == algSecondStage) G_Assignment_Layered(sessionSize, serverCapacity, "PriceAscending");
+			else if ("G_Assignment_Layered_CostIncrease" == algSecondStage) G_Assignment_Layered(sessionSize, serverCapacity, "CostIncrease");
+			else if ("R_Assignment_LSP" == algSecondStage) R_Assignment_LSP();
+			else if ("R_Assignment_LCW" == algSecondStage) R_Assignment_LCW(serverCapacity);
 		}
-
-		/*first stage*/
-		if ("G_Assignment_Nearest" == algFirstStage) G_Assignment_Nearest(sessionSize);
-		else if ("G_Assignment_Simple" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity);
-		else if ("G_Assignment_Simple_PriceAscending" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "PriceAscending");
-		else if ("G_Assignment_Simple_LayerAscending" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerAscending");
-		else if ("G_Assignment_Simple_LayerDescending" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerDescending");
-		else if ("G_Assignment_Simple_CostIncrease" == algFirstStage) G_Assignment_Simple(sessionSize, serverCapacity, "CostIncrease");
-		else if ("G_Assignment_Layered" == algFirstStage) G_Assignment_Layered(sessionSize, serverCapacity);
-		else if ("G_Assignment_Layered_PriceAscending" == algFirstStage) G_Assignment_Layered(sessionSize, serverCapacity, "PriceAscending");
-		else if ("G_Assignment_Layered_CostIncrease" == algFirstStage) G_Assignment_Layered(sessionSize, serverCapacity, "CostIncrease");
-		else if ("R_Assignment_Nearest" == algFirstStage) R_Assignment_Nearest();
-		else if ("R_Assignment_LSP" == algFirstStage) R_Assignment_LSP();
-		else if ("R_Assignment_LCW" == algFirstStage) R_Assignment_LCW(serverCapacity);
-
-		/*second stage*/
-		if ("G_Assignment_Nearest" == algSecondStage) G_Assignment_Nearest(sessionSize);
-		else if ("G_Assignment_Simple" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity);
-		else if ("G_Assignment_Simple_PriceAscending" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "PriceAscending");
-		else if ("G_Assignment_Simple_LayerAscending" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerAscending");
-		else if ("G_Assignment_Simple_LayerDescending" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "LayerDescending");
-		else if ("G_Assignment_Simple_CostIncrease" == algSecondStage) G_Assignment_Simple(sessionSize, serverCapacity, "CostIncrease");
-		else if ("G_Assignment_Layered" == algSecondStage) G_Assignment_Layered(sessionSize, serverCapacity);
-		else if ("G_Assignment_Layered_PriceAscending" == algSecondStage) G_Assignment_Layered(sessionSize, serverCapacity, "PriceAscending");
-		else if ("G_Assignment_Layered_CostIncrease" == algSecondStage) G_Assignment_Layered(sessionSize, serverCapacity, "CostIncrease");
-		else if ("R_Assignment_Nearest" == algSecondStage) R_Assignment_Nearest();
-		else if ("R_Assignment_LSP" == algSecondStage) R_Assignment_LSP();
-		else if ("R_Assignment_LCW" == algSecondStage) R_Assignment_LCW(serverCapacity);
 	}
 	
 	/*a.k.a. Grouping*/
@@ -1570,20 +1509,16 @@ namespace MatchmakingProblem
 			candidateClients4AllRounds.push_back(GenerateCandidateClients(sim_setting.clientCount, sim_setting.regionControl));
 		}
 
-		/*run simulation round by round (each round corresponds to a set of randomly selected candidateClients)*/		
-		vector<pair<string, string>> algorithmCombinations;			
-		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple" });
+		/*run simulation round by round (each round corresponds to a set of randomly selected candidateClients)*/
+		vector<pair<string, string>> algorithmCombinations;
+
+		algorithmCombinations.push_back({ "Assignment_Nearest", "" });
+
+		algorithmCombinations.push_back({ "G_Assignment_Simple", "R_Assignment_LSP" });
+		algorithmCombinations.push_back({ "G_Assignment_Layered", "R_Assignment_LSP" });
+
 		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_PriceAscending" });
-		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Simple_CostIncrease" });
-		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Layered" });
 		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Layered_PriceAscending" });
-		algorithmCombinations.push_back({ "R_Assignment_LSP", "G_Assignment_Layered_CostIncrease" });
-		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Simple" });
-		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Simple_PriceAscending" });
-		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Simple_CostIncrease" });
-		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Layered" });
-		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Layered_PriceAscending" });
-		algorithmCombinations.push_back({ "R_Assignment_LCW", "G_Assignment_Layered_CostIncrease" });
 
 		for (const auto & clients4OneRound : candidateClients4AllRounds)
 		{			
