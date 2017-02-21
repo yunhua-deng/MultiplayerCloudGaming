@@ -365,6 +365,14 @@ namespace MatchmakingProblem
 		/*fixing the random seed such that every run of the Simulate() will have the same random candidateClients in each round*/
 		srand(0);
 
+		/*handle bad parameters*/
+		if (clientCount < sessionSize)
+		{
+			std::printf("\n***ERROR: clientCount < sessionSize***\n");
+			cin.get();
+			return;
+		}
+
 		/*stuff to record performance*/
 		vector<double> eligibleRate;
 		vector<double> groupedRate;
@@ -373,18 +381,25 @@ namespace MatchmakingProblem
 		/*run simulation round by round*/
 		for (int round = 1; round <= simulationCount; round++)
 		{
-			/*generate candidateClients (copy from globalClientList)*/
-			candidateClients.clear();
-			while (candidateClients.size() < clientCount) 
-			{ 
-				candidateClients.push_back(globalClientList.at(GenerateRandomIndex((int)globalClientList.size())));
-			}
-
 			/*generate candidateDatacenters (copy from globalDatacenterList)*/
 			candidateDatacenters = globalDatacenterList;
 
-			/*update eligible datacenters for clients and coverable clients for datacenters*/
-			double totalEligibleClients = 0;
+			/*generate eligible candidateClients (copy from globalClientList)*/
+			candidateClients.clear();
+			while (candidateClients.size() < clientCount)
+			{
+				auto oneClinet = globalClientList.at(GenerateRandomIndex(globalClientList.size()));
+				for (auto & dc : candidateDatacenters)
+				{
+					if (oneClinet.delayToDatacenter.at(dc.id) <= latencyThreshold)
+					{
+						candidateClients.push_back(oneClinet);
+						break;
+					}
+				}
+			}
+
+			/*update eligibleDatacenter_G and coverableClient_G*/
 			for (auto & client : candidateClients)
 			{
 				for (auto & dc : candidateDatacenters)
@@ -395,18 +410,10 @@ namespace MatchmakingProblem
 						dc.coverableClients_G.push_back(&client);
 					}
 				}
-				if (!client.eligibleDatacenters_G.empty()) { totalEligibleClients++; }
 			}
 
-			/*cancel this round*/
-			if (totalEligibleClients < sessionSize)
-			{
-				std::printf("totalEligibleClients < sessionSize -> redo this round\n");
-				round--;
-				continue;
-			}
-			else { eligibleRate.push_back(totalEligibleClients / clientCount); }
-			//std::printf("round=%d\n", round);
+			/*all candidate clients are eligible clients*/
+			eligibleRate.push_back(1.0);
 
 			/*run grouping algorithm*/
 			auto timeStart = clock();
