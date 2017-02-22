@@ -388,12 +388,12 @@ namespace MatchmakingProblem
 			candidateClients.clear();
 			while (candidateClients.size() < clientCount)
 			{
-				auto oneClinet = globalClientList.at(GenerateRandomIndex(globalClientList.size()));
+				auto oneClient = globalClientList.at(GenerateRandomIndex(globalClientList.size()));
 				for (auto & dc : candidateDatacenters)
 				{
-					if (oneClinet.delayToDatacenter.at(dc.id) <= latencyThreshold)
+					if (oneClient.delayToDatacenter.at(dc.id) <= latencyThreshold)
 					{
-						candidateClients.push_back(oneClinet);
+						candidateClients.push_back(oneClient);
 						break;
 					}
 				}
@@ -432,6 +432,37 @@ namespace MatchmakingProblem
 		/*dump to disk*/
 		outFile << clientCount << "," << GetMeanValue(eligibleRate) << "," << GetMeanValue(groupedRate) << "," << GetMeanValue(groupingTime) << "\n";
 		std::printf("%d,%.2f,%.2f,%.2f\n", clientCount, GetMeanValue(eligibleRate), GetMeanValue(groupedRate), GetMeanValue(groupingTime));
+	}
+
+	void MaximumMatchingProblem::CountConnectivity(const int latencyThreshold)
+	{		
+		auto globalDatacenterList_copy = globalDatacenterList; // to avoid modifying the original one
+		auto globalClientList_copy = globalClientList; // to avoid modifying the original one
+		
+		map<int, int> eligibleDcCountHistogram;
+		for (int eligibleDc_G_count = 0; eligibleDc_G_count <= globalDatacenterList_copy.size(); eligibleDc_G_count++)
+		{
+			eligibleDcCountHistogram[eligibleDc_G_count] = 0; // initialize
+		}
+
+		for (auto & client : globalClientList_copy)
+		{
+			for (auto & dc : globalDatacenterList_copy)
+			{
+				if (client.delayToDatacenter.at(dc.id) <= latencyThreshold)
+				{
+					client.eligibleDatacenters_G.push_back(&dc);
+				}
+			}
+
+			eligibleDcCountHistogram.at((int)client.eligibleDatacenters_G.size())++;
+			//cout << (int)client.eligibleDatacenters_G.size() << "," << eligibleDcCountHistogram.at((int)client.eligibleDatacenters_G.size()) << "\n";
+		}
+
+		for (auto & it : eligibleDcCountHistogram)
+		{
+			outFile << it.first << "," << it.second << "\n";
+		}
 	}
 
 	double ParetoMatchingProblem::SearchEligibleDatacenters4Clients(const int latencyThreshold)

@@ -133,6 +133,7 @@ namespace MatchmakingProblem
 		string outputDirectory = dataDirectory + "MaximumMatchingProblem\\";
 		ofstream outFile;
 		void Simulate(const string algToRun, const int clientCount = 100, const int latencyThreshold = 100, const int sessionSize = 10, const int simulationCount = 100);
+		void CountConnectivity(const int latencyThreshold);
 	private:
 		vector<ClientType> candidateClients;
 		vector<DatacenterType> candidateDatacenters;

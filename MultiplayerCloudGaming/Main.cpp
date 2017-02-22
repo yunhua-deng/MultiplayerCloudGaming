@@ -33,6 +33,12 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	for (int latencyThreshold : { 25, 50, 100 })
+	{
+		simulator.outFile = ofstream(simulator.outputDirectory + "connectivityHistogram" + "_" + std::to_string(latencyThreshold) + ".csv");
+		simulator.CountConnectivity(latencyThreshold);
+		simulator.outFile.close();
+	}
 
 	/*ParetoMatchingProblem*/	
 	//auto simulator = ParetoMatchingProblem();
