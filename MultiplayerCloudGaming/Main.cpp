@@ -6,8 +6,8 @@ int main(int argc, char *argv[])
 	auto startTime = clock();
 	
 	// performing simulations with different settings
-	// SimulateBasicProblem(): the basic problem of the MCG server allocation problem, which the G-Server is given and fixed
-	// SimulateGeneralProblem(): the general problem of the MCG server allocation problem, which G-Server is not given but to be optimally chosen by the algortithm
+	// the function SimulateBasicProblem(...) is resposible for the basic problem of the MCG server allocation, which the G-Server is given and fixed
+	// the function SimulateGeneralProblem(...) is responsible for the general problem of the MCG server allocation, which G-Server is not given but to be optimally chosen by the algortithm
 	for (double sessionSize : { 10, 50 })
 	{
 		ServerAllocationProblem::SimulateBasicProblem(75, 50, sessionSize); // DELAY_BOUND_TO_G = 75, DELAY_BOUND_TO_R = 50, SESSION_SIZE = sessionSize, SESSION_COUNT = 1000 (by default if not specified)
@@ -15,6 +15,7 @@ int main(int argc, char *argv[])
 		ServerAllocationProblem::SimulateGeneralProblem(75, 50, sessionSize);
 		ServerAllocationProblem::SimulateGeneralProblem(150, 100, sessionSize);
 	}
+	
 	std::printf("ServerAllocationProblem simulation ended... ***elasped time: %.2f seconds***\n", std::difftime(clock(), startTime) / 1000);
 
 	return 0;
