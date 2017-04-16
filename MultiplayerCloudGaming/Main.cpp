@@ -1,22 +1,35 @@
-#include "ServerAllocationProblem.h"
-#include "MatchmakingProblem.h"
-
-using namespace MatchmakingProblem;
-
+#include "ServerAllocationProblem.h" // must included for the simulation of ServerAllocationProblem
+using namespace ServerAllocationProblem; // must included for the simulation of ServerAllocationProblem
 int main(int argc, char *argv[])
 {
+	std::printf("ServerAllocationProblem simulation starts...\n");
 	auto startTime = clock();
-
-	/*ServerAllocationProblem*/	
-	/*for (double sessionSize : { 10, 50 })
+	
+	// performing simulations with different settings
+	// SimulateBasicProblem(): the basic problem of the MCG server allocation problem, which the G-Server is given and fixed
+	// SimulateGeneralProblem(): the general problem of the MCG server allocation problem, which G-Server is not given but to be optimally chosen by the algortithm
+	for (double sessionSize : { 10, 50 })
 	{
-		ServerAllocationProblem::SimulateBasicProblem(75, 50, sessionSize);
+		ServerAllocationProblem::SimulateBasicProblem(75, 50, sessionSize); // DELAY_BOUND_TO_G = 75, DELAY_BOUND_TO_R = 50, SESSION_SIZE = sessionSize, SESSION_COUNT = 1000 (by default if not specified)
 		ServerAllocationProblem::SimulateBasicProblem(150, 100, sessionSize);
 		ServerAllocationProblem::SimulateGeneralProblem(75, 50, sessionSize);
 		ServerAllocationProblem::SimulateGeneralProblem(150, 100, sessionSize);
-	}*/
+	}
+	std::printf("ServerAllocationProblem simulation ended... ***elasped time: %.2f seconds***\n", std::difftime(clock(), startTime) / 1000);
 
-	/*MaximumMatchingProblem*/
+	return 0;
+}
+
+/* To run the code below for MatchmakingProblem, you need to comment out the above code */
+/*
+#include "MatchmakingProblem.h" // must included for the simulation of MatchmakingProblem
+using namespace MatchmakingProblem; // must included for the simulation of MatchmakingProblem
+int main(int argc, char *argv[])
+{
+	std::printf("MatchmakingProblem simulation starts...\n");
+	auto startTime = clock();
+
+	// MaximumMatchingProblem
 	auto simulator = MatchmakingProblem::MaximumMatchingProblem();	
 	simulator.Initialize(); // initialize once
 	_mkdir(simulator.outputDirectory.c_str());
@@ -40,11 +53,11 @@ int main(int argc, char *argv[])
 		simulator.outFile.close();
 	}
 
-	/*ParetoMatchingProblem*/	
+	// ParetoMatchingProblem	
 	//auto simulator = ParetoMatchingProblem();
 	//simulator.Initialize();
 	//_mkdir(simulator.outputDirectory.c_str());
-	//for (bool regionControl : { false/*, true*/ })
+	//for (bool regionControl : { false })
 	//{
 	//	for (int clientCount : { 50, 100, 150, 200 })
 	//	{
@@ -62,7 +75,8 @@ int main(int argc, char *argv[])
 	//	}
 	//}
 
-	std::printf("\n***total simulation running time: %.2f seconds***\n", std::difftime(clock(), startTime) / 1000);
+	std::printf("MatchmakingProblem simulation ended... ***elasped time: %.2f seconds***\n", std::difftime(clock(), startTime) / 1000);
 
 	return 0;
 }
+*/
